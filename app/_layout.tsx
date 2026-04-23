@@ -1,6 +1,15 @@
 import { Stack } from "expo-router";
-import "./global.css"
+import { StatusBar } from "expo-status-bar";
+import "./global.css";
 
 export default function RootLayout() {
-  return <Stack />;
+  return (
+    <>
+      <Stack>
+        <Stack.Screen name="index" options={{ headerTitle: "Home" }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      </Stack>
+      <StatusBar style="dark" />
+    </>
+  );
 }
