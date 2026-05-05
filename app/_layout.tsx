@@ -21,6 +21,16 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="idea/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="collection/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="tag/[id]" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="tag-picker"
+          options={{
+            presentation: "transparentModal",
+            animation: "slide_from_bottom",
+            headerShown: false,
+          }}
+        />
       </Stack>
       <StatusBar style="light" />
     </GestureHandlerRootView>

@@ -195,6 +195,12 @@ export default function QuickAddScreen() {
 
               {/* + add new tag */}
               <TouchableOpacity
+                onPress={() =>
+                  router.push({
+                    pathname: "/tag-picker",
+                    params: { selected: JSON.stringify(selectedTags) },
+                  })
+                }
                 className="rounded-full px-3.5 py-1.5 border border-dashed items-center justify-center"
                 style={{ borderColor: Colors.brandTeal }}
                 activeOpacity={0.75}

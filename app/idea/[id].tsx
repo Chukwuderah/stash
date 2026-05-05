@@ -5,11 +5,10 @@ import { useState } from "react";
 import {
   Alert,
   ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -30,7 +29,8 @@ interface IdeaDetail {
   status: Status;
   priority: Priority;
   tags: string[];
-  collection: string | null;
+  collection: string | null; // display name
+  collectionId: string | null; // for navigation
   daysOld: number;
   addedDate: string;
   notes: Note[];
@@ -40,11 +40,12 @@ interface IdeaDetail {
 
 const SEED_IDEA: IdeaDetail = {
   id: "1",
+  collection: "App Ideas",
+  collectionId: "1",
   text: "Build a habit tracker app — 15 min daily sessions only",
   status: "active",
   priority: "warm",
   tags: ["apps", "productivity"],
-  collection: "App Ideas",
   daysOld: 4,
   addedDate: "Oct 24, 2023",
   notes: [
@@ -151,22 +152,14 @@ export default function IdeaDetailScreen() {
   }
 
   return (
-    <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: Colors.primaryDark }}
-    >
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor={Colors.primaryDark}
-      />
-
+    <View className="flex-1">
       {/* ── Header ── */}
-      <View
-        className="flex-row items-center justify-between px-5 pt-3 pb-4"
+      <SafeAreaView
+        className="flex-row items-center justify-between px-5 pt-3 pb-0"
         style={{ backgroundColor: Colors.primaryDark }}
       >
         <TouchableOpacity
-          onPress={() => router.back()}
+          onPress={() => router.push("/(tabs)")}
           className="flex-row items-center gap-1"
         >
           <Ionicons name="chevron-back" size={20} color={Colors.accentTeal} />
@@ -189,7 +182,7 @@ export default function IdeaDetailScreen() {
             color={Colors.accentTeal}
           />
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
 
       {/* ── Scrollable body ── */}
       <ScrollView
@@ -338,6 +331,12 @@ export default function IdeaDetailScreen() {
               </View>
             ))}
             <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/tag-picker",
+                  params: { selected: JSON.stringify(idea.tags) },
+                })
+              }
               className="flex-row items-center gap-1 rounded-[10px] px-3 py-1 border border-dashed"
               style={{ borderColor: Colors.brandTeal }}
             >
@@ -354,7 +353,15 @@ export default function IdeaDetailScreen() {
         {/* ── Collection ── */}
         {idea.collection && (
           <SectionCard>
-            <TouchableOpacity className="flex-row items-center gap-3">
+            <TouchableOpacity
+              onPress={() =>
+                router.push({
+                  pathname: "/collection/[id]",
+                  params: { id: idea.collectionId },
+                })
+              }
+              className="flex-row items-center gap-3"
+            >
               <Ionicons
                 name="folder-outline"
                 size={22}
@@ -449,6 +456,6 @@ export default function IdeaDetailScreen() {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }

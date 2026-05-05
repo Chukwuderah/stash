@@ -84,8 +84,10 @@ export default function TagsScreen() {
   const router = useRouter();
 
   function handleTagPress(tag: Tag) {
-    // Navigate to filtered list for this tag
-    // router.push(`/tag/${tag.id}`);
+    router.push({
+      pathname: "/tag/[id]",
+      params: { id: tag.id },
+    });
   }
 
   function handleTagLongPress(tag: Tag) {
