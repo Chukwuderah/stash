@@ -8,7 +8,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -354,12 +354,13 @@ export default function IdeaDetailScreen() {
         {idea.collection && (
           <SectionCard>
             <TouchableOpacity
-              onPress={() =>
+              onPress={() => {
+                if (!idea.collectionId) return;
                 router.push({
                   pathname: "/collection/[id]",
                   params: { id: idea.collectionId },
-                })
-              }
+                });
+              }}
               className="flex-row items-center gap-3"
             >
               <Ionicons

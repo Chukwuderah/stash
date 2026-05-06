@@ -4,7 +4,6 @@ import "react-native-gesture-handler";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import "./global.css";
-import colors from "@/constants/colors";
 
 export default function RootLayout() {
   return (

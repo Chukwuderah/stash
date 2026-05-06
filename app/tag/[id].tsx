@@ -4,15 +4,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   FlatList,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type Priority = "hot" | "warm" | "cold" | null;
 type Status = "active" | "complete" | "archived";
