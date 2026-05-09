@@ -1,8 +1,11 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Platform,
   ScrollView,
@@ -12,83 +15,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// ─── TODO: replace with Clerk useAuth() once auth is set up ───────────────────
+const TEMP_USER_ID = "temp_user_1";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 type Priority = "hot" | "warm" | "cold" | null;
-type Status = "active" | "archived" | "complete";
 type Filter = "all" | "hot" | "warm" | "cold";
 
-interface Tag {
-  id: string;
-  label: string;
-}
-
-interface Idea {
-  id: string;
-  text: string;
-  priority: Priority;
-  status: Status;
-  tags: Tag[];
-  createdAt: Date;
-  daysOld: number;
-}
-
-// ─── Seed data (replace with Convex useQuery later) ───────────────────────────
-
-const SEED_IDEAS: Idea[] = [
-  {
-    id: "1",
-    text: "Build a habit tracker app — 15 min daily sessions only",
-    priority: "hot",
-    status: "active",
-    tags: [
-      { id: "t1", label: "apps" },
-      { id: "t2", label: "productivity" },
-    ],
-    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    daysOld: 1,
-  },
-  {
-    id: "2",
-    text: "Freelance rate calculator for designers — what's the real MVP?",
-    priority: "hot",
-    status: "active",
-    tags: [
-      { id: "t3", label: "business" },
-      { id: "t1", label: "apps" },
-    ],
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    daysOld: 2,
-  },
-  {
-    id: "3",
-    text: "Write a thread on the mistake of scaling too early",
-    priority: "warm",
-    status: "active",
-    tags: [{ id: "t4", label: "content" }],
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    daysOld: 5,
-  },
-  {
-    id: "4",
-    text: "Lo-fi YouTube channel — study beats with a live visual timer",
-    priority: "warm",
-    status: "active",
-    tags: [
-      { id: "t4", label: "content" },
-      { id: "t5", label: "creative" },
-    ],
-    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
-    daysOld: 8,
-  },
-  {
-    id: "5",
-    text: "Try Expo DOM components — is it production ready yet?",
-    priority: "cold",
-    status: "active",
-    tags: [{ id: "t6", label: "dev" }],
-    createdAt: new Date(Date.now() - 32 * 24 * 60 * 60 * 1000),
-    daysOld: 32,
-  },
-];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PRIORITY_BAR_COLOR: Record<NonNullable<Priority>, string> = {
   hot: Colors.hot,
@@ -98,6 +33,10 @@ const PRIORITY_BAR_COLOR: Record<NonNullable<Priority>, string> = {
 
 const AGE_THRESHOLD_DAYS = 30;
 
+function getDaysOld(createdAt: number): number {
+  return Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+}
+
 function formatRelativeTime(daysOld: number): string {
   if (daysOld === 0) return "Today";
   if (daysOld === 1) return "1d ago";
@@ -105,6 +44,8 @@ function formatRelativeTime(daysOld: number): string {
   if (daysOld < 30) return `${Math.floor(daysOld / 7)}w ago`;
   return `${Math.floor(daysOld / 30)}mo ago`;
 }
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TagPill({ label }: { label: string }) {
   return (
@@ -138,11 +79,12 @@ function AgeBadge({ days }: { days: number }) {
   );
 }
 
-function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+function IdeaCard({ idea, onPress }: { idea: any; onPress: () => void }) {
+  const daysOld = getDaysOld(idea.createdAt);
   const barColor = idea.priority
-    ? PRIORITY_BAR_COLOR[idea.priority]
+    ? PRIORITY_BAR_COLOR[idea.priority as NonNullable<Priority>]
     : Colors.cardBorder;
-  const isAged = idea.daysOld >= AGE_THRESHOLD_DAYS;
+  const isAged = daysOld >= AGE_THRESHOLD_DAYS;
 
   return (
     <TouchableOpacity
@@ -166,16 +108,16 @@ function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
 
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row flex-wrap gap-1.5 flex-1">
-            {idea.tags.map((tag) => (
-              <TagPill key={tag.id} label={tag.label} />
+            {idea.tags?.map((tag: any) => (
+              <TagPill key={tag._id} label={tag.name} />
             ))}
-            {isAged && <AgeBadge days={idea.daysOld} />}
+            {isAged && <AgeBadge days={daysOld} />}
           </View>
           <Text
             className="text-[11px] flex-shrink-0"
             style={{ color: Colors.textMuted }}
           >
-            {formatRelativeTime(idea.daysOld)}
+            {formatRelativeTime(daysOld)}
           </Text>
         </View>
       </View>
@@ -231,14 +173,15 @@ function FilterChip({
   );
 }
 
-export default function index() {
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
+export default function TheLotScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
 
-  const filteredIdeas = SEED_IDEAS.filter((idea) => {
-    if (activeFilter === "all") return true;
-    return idea.priority === activeFilter;
-  });
+  // ── Convex query ──────────────────────────────────────────────────────────
+  // undefined = loading, array = ready
+  const ideas = useQuery(api.ideas.getIdeas, { userId: TEMP_USER_ID });
 
   const filters: { label: string; value: Filter }[] = [
     { label: "All", value: "all" },
@@ -247,44 +190,44 @@ export default function index() {
     { label: "Cold", value: "cold" },
   ];
 
+  // Client-side priority filter
+  const filteredIdeas =
+    ideas?.filter((idea) => {
+      if (activeFilter === "all") return true;
+      return idea.priority === activeFilter;
+    }) ?? [];
+
   return (
     <View className="flex-1">
       <SafeAreaView
         style={{ backgroundColor: Colors.primaryDark }}
         className="px-6 pt-6 pb-3"
       >
+        {/* ── Header ── */}
         <View className="flex flex-row items-center justify-between">
           <View>
             <Text className="text-white text-4xl font-extrabold">Stash</Text>
             <Text
-              style={{ color: Colors.textOnDark }}
+              style={{ color: Colors.accentTeal }}
               className="text-lg font-medium"
             >
-              {SEED_IDEAS.length} ideas parked
+              {ideas?.length ?? 0} idea{(ideas?.length ?? 0) > 1 ? "s" : ""} parked
             </Text>
           </View>
           <View
-            className="rounded-full w-10 h-10 flex flex-row items-center justify-center"
+            className="rounded-full w-10 h-10 items-center justify-center"
             style={{ backgroundColor: Colors.brandTeal }}
           >
-            <Text className="text-white text-2xl font-medium">A</Text>
+            <Text className="text-white text-base font-semibold">A</Text>
           </View>
         </View>
 
         {/* ── Filter chips ── */}
-        <View
-          className="mt-4 mb-2.5"
-          style={{ backgroundColor: Colors.primaryDark }}
-        >
+        <View className="mt-4 mb-2.5">
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 20,
-              paddingTop: 14,
-              gap: 8,
-              flexDirection: "row",
-            }}
+            contentContainerStyle={{ gap: 8, flexDirection: "row" }}
           >
             {filters.map((f) => (
               <FilterChip
@@ -299,36 +242,51 @@ export default function index() {
         </View>
       </SafeAreaView>
 
-      {/* ── Idea list ── */}
+      {/* ── Body ── */}
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
-        <FlatList
-          data={filteredIdeas}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <IdeaCard
-              idea={item}
-              onPress={() => router.push(`/idea/${item.id}`)}
-            />
-          )}
-          contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="items-center pt-20 px-10 gap-2">
-              <Text
-                className="text-[16px] font-medium"
-                style={{ color: Colors.textSubtle }}
-              >
-                Nothing parked yet
-              </Text>
-              <Text
-                className="text-[14px] text-center leading-5"
-                style={{ color: Colors.textMuted }}
-              >
-                Tap the + button to stash your first idea
-              </Text>
-            </View>
-          }
-        />
+        {/* Loading */}
+        {ideas === undefined && (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={Colors.brandTeal} />
+          </View>
+        )}
+
+        {/* Loaded */}
+        {ideas !== undefined && (
+          <FlatList
+            data={filteredIdeas}
+            keyExtractor={(item) => item._id}
+            renderItem={({ item }) => (
+              <IdeaCard
+                idea={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/idea/[id]",
+                    params: { id: item._id },
+                  })
+                }
+              />
+            )}
+            contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View className="items-center pt-20 px-10 gap-2">
+                <Text
+                  className="text-[16px] font-medium"
+                  style={{ color: Colors.textSubtle }}
+                >
+                  Nothing parked yet
+                </Text>
+                <Text
+                  className="text-[14px] text-center leading-5"
+                  style={{ color: Colors.textMuted }}
+                >
+                  Tap the + button to stash your first idea
+                </Text>
+              </View>
+            }
+          />
+        )}
       </View>
 
       {/* ── FAB ── */}
