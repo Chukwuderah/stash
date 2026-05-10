@@ -3,8 +3,27 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Tabs } from "expo-router";
 import React from "react";
+import { View } from "react-native";
 
 export default function TabsLayout() {
+  function ActiveTabBar({
+    children,
+    focused,
+  }: {
+    children: React.ReactNode;
+    focused: boolean;
+  }) {
+    return (
+      <View
+        className={`${focused ? "w-16 h-full flex-row justify-center items-center rounded-full" : undefined}`}
+        style={{
+          backgroundColor: focused ? "#96f4e9" : undefined,
+        }}
+      >
+        {children}
+      </View>
+    );
+  }
   return (
     <Tabs
       screenOptions={{
@@ -26,6 +45,7 @@ export default function TabsLayout() {
           fontSize: 12,
           fontWeight: "600",
           textTransform: "uppercase",
+          marginTop: 2,
         },
       }}
     >
@@ -34,11 +54,13 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "The Lot",
           tabBarIcon: ({ color, focused, size }) => (
-            <MaterialCommunityIcons
-              name={focused ? "archive" : "archive-outline"}
-              size={size}
-              color={color}
-            />
+            <ActiveTabBar focused={focused}>
+              <MaterialCommunityIcons
+                name={focused ? "archive" : "archive-outline"}
+                size={size}
+                color={color}
+              />
+            </ActiveTabBar>
           ),
         }}
       />
@@ -47,11 +69,13 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Search",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons
-              name={focused ? "search" : "search-outline"}
-              size={size}
-              color={color}
-            />
+            <ActiveTabBar focused={focused}>
+              <Ionicons
+                name={focused ? "search" : "search-outline"}
+                size={size}
+                color={color}
+              />
+            </ActiveTabBar>
           ),
         }}
       />
@@ -60,11 +84,13 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Tags",
           tabBarIcon: ({ color, focused, size }) => (
-            <MaterialCommunityIcons
-              name={focused ? "tag" : "tag-outline"}
-              size={size}
-              color={color}
-            />
+            <ActiveTabBar focused={focused}>
+              <MaterialCommunityIcons
+                name={focused ? "tag" : "tag-outline"}
+                size={size}
+                color={color}
+              />
+            </ActiveTabBar>
           ),
         }}
       />
@@ -73,11 +99,13 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Settings",
           tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              size={size}
-              color={color}
-            />
+            <ActiveTabBar focused={focused}>
+              <Ionicons
+                name={focused ? "settings" : "settings-outline"}
+                size={size}
+                color={color}
+              />
+            </ActiveTabBar>
           ),
         }}
       />
