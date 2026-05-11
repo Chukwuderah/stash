@@ -52,4 +52,20 @@ export default defineSchema({
     userId: v.string(),
     createdAt: v.number(),
   }).index("by_idea", ["ideaId"]),
+
+  userPreferences: defineTable({
+    userId: v.string(),
+    dailyNudge: v.boolean(),
+    cadence: v.union(
+      v.literal("Daily"),
+      v.literal("Every 2 days"),
+      v.literal("Weekly"),
+    ),
+    agingThreshold: v.union(
+      v.literal("30 days"),
+      v.literal("60 days"),
+      v.literal("90 days"),
+    ),
+    sortOrder: v.union(v.literal("Newest first"), v.literal("Oldest first")),
+  }).index("by_user", ["userId"]),
 });
