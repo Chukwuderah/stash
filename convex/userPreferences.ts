@@ -10,9 +10,7 @@ const DEFAULTS = {
   sortOrder: "Newest first" as const,
 };
 
-// ─── getUserPreferences ───────────────────────────────────────────────────────
-// Returns null if the user has never saved preferences.
-// The screen falls back to DEFAULTS in that case.
+// getUserPreferences
 
 export const getUserPreferences = query({
   args: { userId: v.string() },
@@ -24,9 +22,7 @@ export const getUserPreferences = query({
   },
 });
 
-// ─── setUserPreferences ───────────────────────────────────────────────────────
-// Upserts preferences — creates on first call, patches on subsequent calls.
-// All fields are optional so you can update just one at a time.
+// setUserPreferences
 
 export const setUserPreferences = mutation({
   args: {

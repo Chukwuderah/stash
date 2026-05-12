@@ -1,4 +1,7 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { tagSelection } from "@/utils/tagSelection";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
@@ -6,9 +9,11 @@ import BottomSheet, {
   BottomSheetFlatList,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
+import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   StatusBar,
   Text,
   TextInput,
@@ -16,35 +21,19 @@ import {
   View,
 } from "react-native";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// TODO: replace with Clerk useAuth() once auth is set up
+const TEMP_USER_ID = "temp_user_1";
 
-interface Tag {
-  id: string;
-  label: string;
-  color: string;
-}
-
-// ─── Seed tags (replace with Convex useQuery later) ───────────────────────────
-
-const ALL_TAGS: Tag[] = [
-  { id: "t1", label: "apps", color: "#F97316" },
-  { id: "t2", label: "content", color: "#8B5CF6" },
-  { id: "t3", label: "productivity", color: "#0D9488" },
-  { id: "t4", label: "business", color: "#F59E0B" },
-  { id: "t5", label: "creative", color: "#EC4899" },
-  { id: "t6", label: "dev", color: "#3B82F6" },
-  { id: "t7", label: "research", color: "#10B981" },
-  { id: "t8", label: "misc", color: "#94A3B8" },
-];
-
-// ─── Tag row ──────────────────────────────────────────────────────────────────
+// Tag row
 
 function TagRow({
-  tag,
+  name,
+  color,
   selected,
   onToggle,
 }: {
-  tag: Tag;
+  name: string;
+  color: string;
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -55,21 +44,16 @@ function TagRow({
       onPress={onToggle}
       activeOpacity={0.65}
     >
-      {/* Colour dot */}
       <View
         className="w-[10px] h-[10px] rounded-full mr-4"
-        style={{ backgroundColor: tag.color }}
+        style={{ backgroundColor: color }}
       />
-
-      {/* Label */}
       <Text
         className="flex-1 text-[15px]"
         style={{ color: Colors.textPrimary }}
       >
-        {tag.label}
+        {name}
       </Text>
-
-      {/* Checkmark */}
       {selected && (
         <Ionicons name="checkmark" size={18} color={Colors.brandTeal} />
       )}
@@ -77,7 +61,7 @@ function TagRow({
   );
 }
 
-// ─── Create row (shown when query has no match) ───────────────────────────────
+// Create tag row
 
 function CreateTagRow({
   query,
@@ -101,37 +85,33 @@ function CreateTagRow({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Tag color palette (cycles when creating new tags)
 
-/**
- * HOW TO OPEN FROM IDEA DETAIL:
- *   router.push({
- *     pathname: "/tag-picker",
- *     params: { selected: JSON.stringify(currentTagIds) },
- *   });
- *
- * HOW TO OPEN FROM QUICK ADD:
- *   router.push({
- *     pathname: "/tag-picker",
- *     params: { selected: JSON.stringify(selectedTagIds) },
- *   });
- *
- * HOW TO RECEIVE THE RESULT:
- *   Use a shared Zustand store or Convex optimistic update.
- *   When the user taps Done, call your mutation/store update
- *   then router.back() — the parent screen re-renders with new tags.
- */
+const TAG_COLORS = [
+  "#F97316",
+  "#8B5CF6",
+  "#0D9488",
+  "#F59E0B",
+  "#EC4899",
+  "#3B82F6",
+  "#10B981",
+  "#94A3B8",
+];
+
+// Main screen
 
 export default function TagPickerScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ selected?: string }>();
+  const params = useLocalSearchParams<{ selected?: string; ideaId?: string }>();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const inputRef = useRef<TextInput>(null);
   const snapPoints = useMemo(() => ["75%", "92%"], []);
 
-  // Pre-populate selection from params (tags already on the idea)
-  const [selected, setSelected] = useState<string[]>(() => {
+  // Present when opened from Idea Detail, absent from Quick Add
+  const ideaId = params.ideaId as Id<"ideas"> | undefined;
+
+  const [selected, setSelected] = useState<Id<"tags">[]>(() => {
     try {
       return params.selected ? JSON.parse(params.selected) : [];
     } catch {
@@ -139,7 +119,23 @@ export default function TagPickerScreen() {
     }
   });
 
+  // Snapshot of the initial selection — used to compute diff on Done
+  const initialSelected = useMemo<Id<"tags">[]>(() => {
+    try {
+      return params.selected ? JSON.parse(params.selected) : [];
+    } catch {
+      return [];
+    }
+  }, []);
+
   const [query, setQuery] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Convex
+  const tags = useQuery(api.tags.getTags, { userId: TEMP_USER_ID });
+  const createTag = useMutation(api.tags.createTag);
+  const addTagToIdea = useMutation(api.ideaTags.addTagToIdea);
+  const removeTagFromIdea = useMutation(api.ideaTags.removeTagFromIdea);
 
   useEffect(() => {
     bottomSheetRef.current?.expand();
@@ -147,41 +143,61 @@ export default function TagPickerScreen() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Filter tags based on search query
-  const filteredTags = useMemo(() => {
-    if (!query.trim()) return ALL_TAGS;
-    return ALL_TAGS.filter((t) =>
-      t.label.toLowerCase().includes(query.toLowerCase()),
-    );
-  }, [query]);
+  // Filtering
 
-  // Show "Create" row when query has text but no exact match
+  const filteredTags = useMemo(() => {
+    if (!tags) return [];
+    if (!query.trim()) return tags;
+    return tags.filter((t) =>
+      t.name.toLowerCase().includes(query.toLowerCase()),
+    );
+  }, [tags, query]);
+
   const showCreate =
     query.trim().length > 0 &&
-    !ALL_TAGS.some((t) => t.label.toLowerCase() === query.toLowerCase());
+    tags !== undefined &&
+    !tags.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
 
-  function toggleTag(id: string) {
+  // Handlers
+
+  function toggleTag(id: Id<"tags">) {
     setSelected((prev) =>
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   }
 
-  function handleCreateTag() {
-    // TODO: Convex createTag mutation, then add new id to selected
-    const newTag: Tag = {
-      id: `new-${Date.now()}`,
-      label: query.trim(),
-      color: Colors.brandTeal,
-    };
-    ALL_TAGS.push(newTag); // temp — replace with Convex mutation
-    setSelected((prev) => [...prev, newTag.id]);
-    setQuery("");
+  async function handleCreateTag() {
+    if (!query.trim() || isCreating) return;
+    setIsCreating(true);
+    try {
+      const color = TAG_COLORS[(tags?.length ?? 0) % TAG_COLORS.length];
+      const newTagId = await createTag({
+        name: query.trim(),
+        color,
+        userId: TEMP_USER_ID,
+      });
+      setSelected((prev) => [...prev, newTagId]);
+      setQuery("");
+    } finally {
+      setIsCreating(false);
+    }
   }
 
-  function handleDone() {
-    // TODO: pass selected back via Zustand store or Convex mutation
-    // e.g. useIdeaStore.getState().setTags(selected)
-    console.log("Selected tags:", selected);
+  async function handleDone() {
+    if (ideaId) {
+      // Opened from Idea Detail — sync tags directly in Convex
+      const toAdd = selected.filter((id) => !initialSelected.includes(id));
+      const toRemove = initialSelected.filter((id) => !selected.includes(id));
+
+      await Promise.all([
+        ...toAdd.map((tagId) => addTagToIdea({ ideaId, tagId })),
+        ...toRemove.map((tagId) => removeTagFromIdea({ ideaId, tagId })),
+      ]);
+    } else {
+      // Opened from Quick Add — write to global store, Quick Add reads on focus
+      tagSelection.set(selected);
+    }
+
     bottomSheetRef.current?.close();
     router.back();
   }
@@ -234,7 +250,7 @@ export default function TagPickerScreen() {
         android_keyboardInputMode="adjustResize"
       >
         <BottomSheetView className="flex-1">
-          {/* ── Header ── */}
+          {/* Header */}
           <View className="flex-row items-center justify-between px-5 pt-1 pb-3">
             <Text
               className="text-[17px] font-semibold"
@@ -252,7 +268,7 @@ export default function TagPickerScreen() {
             </TouchableOpacity>
           </View>
 
-          {/* ── Search input ── */}
+          {/* Search input */}
           <View
             className="flex-row items-center gap-3 mx-4 mb-3 px-4 py-3 rounded-xl border-[0.5px]"
             style={{
@@ -291,37 +307,46 @@ export default function TagPickerScreen() {
             )}
           </View>
 
-          {/* ── Tag list ── */}
-          <BottomSheetFlatList
-            data={filteredTags}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TagRow
-                tag={item}
-                selected={selected.includes(item.id)}
-                onToggle={() => toggleTag(item.id)}
-              />
-            )}
-            keyboardShouldPersistTaps="handled"
-            contentContainerStyle={{ paddingBottom: 40 }}
-            ListHeaderComponent={
-              showCreate ? (
-                <CreateTagRow query={query} onCreate={handleCreateTag} />
-              ) : null
-            }
-            ListEmptyComponent={
-              !showCreate ? (
-                <View className="items-center pt-10 gap-2">
-                  <Text
-                    className="text-[14px]"
-                    style={{ color: Colors.textMuted }}
-                  >
-                    No tags match "{query}"
-                  </Text>
-                </View>
-              ) : null
-            }
-          />
+          {/* Tag list */}
+          {tags === undefined ? (
+            <View className="flex-1 items-center justify-center">
+              <ActivityIndicator size="large" color={Colors.brandTeal} />
+            </View>
+          ) : (
+            <BottomSheetFlatList
+              data={filteredTags}
+              keyExtractor={(item) => item._id}
+              renderItem={({ item }) => (
+                <TagRow
+                  name={item.name}
+                  color={item.color}
+                  selected={selected.includes(item._id)}
+                  onToggle={() => toggleTag(item._id)}
+                />
+              )}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 40 }}
+              ListHeaderComponent={
+                showCreate ? (
+                  <CreateTagRow query={query} onCreate={handleCreateTag} />
+                ) : null
+              }
+              ListEmptyComponent={
+                !showCreate ? (
+                  <View className="items-center pt-10 gap-2">
+                    <Text
+                      className="text-[14px]"
+                      style={{ color: Colors.textMuted }}
+                    >
+                      {query
+                        ? `No tags match "${query}"`
+                        : "No tags yet — type to create one"}
+                    </Text>
+                  </View>
+                ) : null
+              }
+            />
+          )}
         </BottomSheetView>
       </BottomSheet>
     </View>

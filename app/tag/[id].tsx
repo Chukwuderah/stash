@@ -1,8 +1,12 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   StatusBar,
@@ -12,104 +16,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Types
+
 type Priority = "hot" | "warm" | "cold" | null;
-type Status = "active" | "complete" | "archived";
 type StatusFilter = "active" | "complete" | "archived";
 
-interface Tag {
-  id: string;
-  label: string;
-}
-
-interface Idea {
-  id: string;
-  text: string;
-  priority: Priority;
-  status: Status;
-  tags: Tag[];
-  daysOld: number;
-}
-
-// ─── Seed data (replace with Convex useQuery later) ───────────────────────────
-
-const SEED_IDEAS_BY_TAG: Record<string, Idea[]> = {
-  t3: [
-    {
-      id: "i1",
-      text: "Write a thread on the mistake of scaling too early",
-      priority: "warm",
-      status: "active",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 5,
-    },
-    {
-      id: "i2",
-      text: "Lo-fi YouTube channel — study beats with a live visual timer",
-      priority: "hot",
-      status: "active",
-      tags: [
-        { id: "t3", label: "content" },
-        { id: "t5", label: "creative" },
-      ],
-      daysOld: 8,
-    },
-    {
-      id: "i3",
-      text: "Start a newsletter about building in public",
-      priority: "warm",
-      status: "active",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 12,
-    },
-    {
-      id: "i4",
-      text: "Repurpose old Twitter threads into a LinkedIn carousel series",
-      priority: "cold",
-      status: "active",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 38,
-    },
-    {
-      id: "i5",
-      text: "YouTube Shorts strategy — repost or original?",
-      priority: "cold",
-      status: "active",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 45,
-    },
-    {
-      id: "i6",
-      text: "Document the Stash build process as a dev log series",
-      priority: "warm",
-      status: "complete",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 20,
-    },
-    {
-      id: "i7",
-      text: "Write a teardown of Notion's onboarding flow",
-      priority: "cold",
-      status: "archived",
-      tags: [{ id: "t3", label: "content" }],
-      daysOld: 60,
-    },
-  ],
-};
-
-// ─── Tag meta (replace with Convex lookup later) ──────────────────────────────
-
-const TAG_META: Record<string, { label: string; color: string }> = {
-  t1: { label: "apps", color: "#F97316" },
-  t2: { label: "productivity", color: "#0D9488" },
-  t3: { label: "content", color: "#8B5CF6" },
-  t4: { label: "business", color: "#F59E0B" },
-  t5: { label: "creative", color: "#EC4899" },
-  t6: { label: "dev", color: "#3B82F6" },
-  t7: { label: "research", color: "#10B981" },
-  t8: { label: "misc", color: "#94A3B8" },
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers──
 
 const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
   hot: Colors.hot,
@@ -119,6 +31,10 @@ const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
 
 const AGE_THRESHOLD_DAYS = 30;
 
+function getDaysOld(createdAt: number): number {
+  return Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+}
+
 function formatRelativeTime(daysOld: number): string {
   if (daysOld === 0) return "Today";
   if (daysOld === 1) return "1d ago";
@@ -127,7 +43,7 @@ function formatRelativeTime(daysOld: number): string {
   return `${Math.floor(daysOld / 30)}mo ago`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// Sub-components
 
 function TagPill({ label }: { label: string }) {
   return (
@@ -161,11 +77,12 @@ function AgeBadge({ days }: { days: number }) {
   );
 }
 
-function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+function IdeaCard({ idea, onPress }: { idea: any; onPress: () => void }) {
+  const daysOld = getDaysOld(idea.createdAt);
   const barColor = idea.priority
-    ? PRIORITY_BAR[idea.priority]
+    ? PRIORITY_BAR[idea.priority as NonNullable<Priority>]
     : Colors.cardBorder;
-  const isAged = idea.daysOld >= AGE_THRESHOLD_DAYS;
+  const isAged = daysOld >= AGE_THRESHOLD_DAYS;
 
   return (
     <TouchableOpacity
@@ -185,25 +102,22 @@ function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
         >
           {idea.text}
         </Text>
-
-        {/* Age badge on its own row if aged */}
         {isAged && (
           <View className="mb-1.5">
-            <AgeBadge days={idea.daysOld} />
+            <AgeBadge days={daysOld} />
           </View>
         )}
-
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row flex-wrap gap-1.5 flex-1">
-            {idea.tags.map((tag) => (
-              <TagPill key={tag.id} label={tag.label} />
+            {idea.tags?.map((tag: any) => (
+              <TagPill key={tag._id} label={tag.name} />
             ))}
           </View>
           <Text
             className="text-[11px] flex-shrink-0"
             style={{ color: Colors.textMuted }}
           >
-            {formatRelativeTime(idea.daysOld)}
+            {formatRelativeTime(daysOld)}
           </Text>
         </View>
       </View>
@@ -232,9 +146,7 @@ function StatusChip({
     >
       <Text
         className="text-[13px] font-medium"
-        style={{
-          color: active ? "#FFFFFF" : "rgba(255,255,255,0.75)",
-        }}
+        style={{ color: active ? "#FFFFFF" : "rgba(255,255,255,0.75)" }}
       >
         {label}
       </Text>
@@ -242,18 +154,23 @@ function StatusChip({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function TagFilteredScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const tagId = id as Id<"tags">;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
-  const tagId = id ?? "t3";
-  const tag = TAG_META[tagId] ?? { label: "tag", color: Colors.brandTeal };
-  const allIdeas = SEED_IDEAS_BY_TAG[tagId] ?? [];
+  // ── Convex
+  const tag = useQuery(api.tags.getTagById, { tagId });
+  const allIdeas = useQuery(api.ideas.getIdeasByTag, { tagId });
 
-  const filteredIdeas = allIdeas.filter((idea) => idea.status === statusFilter);
+  const isLoading = tag === undefined || allIdeas === undefined;
+
+  // Client-side status filter
+  const filteredIdeas =
+    allIdeas?.filter((idea) => idea?.status === statusFilter) ?? [];
 
   const statusFilters: { label: string; value: StatusFilter }[] = [
     { label: "Active", value: "active" },
@@ -288,8 +205,6 @@ export default function TagFilteredScreen() {
               Tags
             </Text>
           </TouchableOpacity>
-
-          {/* Sort icon */}
           <TouchableOpacity activeOpacity={0.75}>
             <Ionicons
               name="filter-outline"
@@ -299,23 +214,33 @@ export default function TagFilteredScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Tag name + count centred */}
+        {/* Tag name + count */}
         <View className="items-center mb-3">
-          <View className="flex-row items-center gap-2 mb-1">
-            <View
-              className="w-[10px] h-[10px] rounded-full"
-              style={{ backgroundColor: tag.color }}
-            />
-            <Text
-              className="text-[22px] font-semibold"
-              style={{ color: Colors.textOnDark }}
-            >
-              #{tag.label}
-            </Text>
-          </View>
-          <Text className="text-[13px]" style={{ color: Colors.accentTeal }}>
-            {allIdeas.length} {allIdeas.length === 1 ? "idea" : "ideas"}
-          </Text>
+          {isLoading ? (
+            <ActivityIndicator size="small" color={Colors.accentTeal} />
+          ) : (
+            <>
+              <View className="flex-row items-center gap-2 mb-1">
+                <View
+                  className="w-[10px] h-[10px] rounded-full"
+                  style={{ backgroundColor: tag?.color ?? Colors.brandTeal }}
+                />
+                <Text
+                  className="text-[22px] font-semibold"
+                  style={{ color: Colors.textOnDark }}
+                >
+                  #{tag?.name ?? ""}
+                </Text>
+              </View>
+              <Text
+                className="text-[13px]"
+                style={{ color: Colors.accentTeal }}
+              >
+                {allIdeas?.length ?? 0}{" "}
+                {(allIdeas?.length ?? 0) === 1 ? "idea" : "ideas"}
+              </Text>
+            </>
+          )}
         </View>
 
         {/* Status filter chips */}
@@ -341,40 +266,51 @@ export default function TagFilteredScreen() {
 
       {/* ── Ideas list ── */}
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
-        <FlatList
-          data={filteredIdeas}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <IdeaCard
-              idea={item}
-              onPress={() => router.push(`/idea/${item.id}` as any)}
-            />
-          )}
-          contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="items-center pt-20 px-10 gap-3">
-              <Ionicons
-                name="pricetag-outline"
-                size={40}
-                color={Colors.cardBorder}
+        {isLoading ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color={Colors.brandTeal} />
+          </View>
+        ) : (
+          <FlatList
+            data={filteredIdeas}
+            keyExtractor={(item) => item!._id}
+            renderItem={({ item }) => (
+              <IdeaCard
+                idea={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/idea/[id]",
+                    params: { id: item!._id },
+                  })
+                }
               />
-              <Text
-                className="text-[16px] font-medium"
-                style={{ color: Colors.textSubtle }}
-              >
-                No {statusFilter} ideas
-              </Text>
-              <Text
-                className="text-[14px] text-center leading-5"
-                style={{ color: Colors.textMuted }}
-              >
-                Ideas tagged #{tag.label} with status "{statusFilter}" will
-                appear here
-              </Text>
-            </View>
-          }
-        />
+            )}
+            contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              <View className="items-center pt-20 px-10 gap-3">
+                <Ionicons
+                  name="pricetag-outline"
+                  size={40}
+                  color={Colors.cardBorder}
+                />
+                <Text
+                  className="text-[16px] font-medium"
+                  style={{ color: Colors.textSubtle }}
+                >
+                  No {statusFilter} ideas
+                </Text>
+                <Text
+                  className="text-[14px] text-center leading-5"
+                  style={{ color: Colors.textMuted }}
+                >
+                  Ideas tagged #{tag?.name} with status "{statusFilter}" will
+                  appear here
+                </Text>
+              </View>
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );

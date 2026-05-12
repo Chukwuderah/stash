@@ -1,8 +1,12 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   Text,
@@ -12,57 +16,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// TODO: replace with Clerk useAuth() once auth is set up 
+const TEMP_USER_ID = "temp_user_1";
+
+// Types
 
 type Priority = "hot" | "warm" | "cold" | null;
 type Status = "active" | "complete" | "archived";
 
-interface Note {
-  id: string;
-  text: string;
-  createdAt: string;
-}
-
-interface IdeaDetail {
-  id: string;
-  text: string;
-  status: Status;
-  priority: Priority;
-  tags: string[];
-  collection: string | null; // display name
-  collectionId: string | null; // for navigation
-  daysOld: number;
-  addedDate: string;
-  notes: Note[];
-}
-
-// ─── Seed data (replace with Convex useQuery later) ───────────────────────────
-
-const SEED_IDEA: IdeaDetail = {
-  id: "1",
-  collection: "App Ideas",
-  collectionId: "1",
-  text: "Build a habit tracker app — 15 min daily sessions only",
-  status: "active",
-  priority: "warm",
-  tags: ["apps", "productivity"],
-  daysOld: 4,
-  addedDate: "Oct 24, 2023",
-  notes: [
-    {
-      id: "n1",
-      text: "Focus on core loop: 1. Set habit. 2. Do 15 mins. 3. Tick off. No streaks, just consistency.",
-      createdAt: "Oct 25",
-    },
-    {
-      id: "n2",
-      text: "Maybe integrate with Apple Health for activity rings?",
-      createdAt: "Oct 26",
-    },
-  ],
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
   hot: Colors.hot,
@@ -76,7 +38,26 @@ const PRIORITY_DOT: Record<NonNullable<Priority>, string> = {
   cold: Colors.cold,
 };
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function formatNoteDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function getDaysOld(timestamp: number): number {
+  return Math.floor((Date.now() - timestamp) / (1000 * 60 * 60 * 24));
+}
+
+// Sub-components
 
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -100,39 +81,62 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function IdeaDetailScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const ideaId = id as Id<"ideas">;
 
-  // Local state (replace with Convex mutations later)
-  const [idea, setIdea] = useState<IdeaDetail>(SEED_IDEA);
   const [newNote, setNewNote] = useState("");
 
+  // Convex
+  const idea = useQuery(api.ideas.getIdeaById, { ideaId });
+  const updateIdea = useMutation(api.ideas.updateIdea);
+  const addNote = useMutation(api.notes.addNote);
+
+  // Loading
+  if (idea === undefined) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: Colors.screenBg }}
+      >
+        <ActivityIndicator size="large" color={Colors.brandTeal} />
+      </View>
+    );
+  }
+
+  // Not found
+  if (idea === null) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: Colors.screenBg }}
+      >
+        <Text style={{ color: Colors.textMuted }}>Idea not found.</Text>
+      </View>
+    );
+  }
+
+  const daysOld = getDaysOld(idea.createdAt);
   const barColor = idea.priority
-    ? PRIORITY_BAR[idea.priority]
+    ? PRIORITY_BAR[idea.priority as NonNullable<Priority>]
     : Colors.cardBorder;
 
-  function setStatus(status: Status) {
-    setIdea((prev) => ({ ...prev, status }));
+  // Handlers
+
+  function handleSetStatus(status: Status) {
+    updateIdea({ ideaId, status });
   }
 
-  function setPriority(priority: Priority) {
-    setIdea((prev) => ({ ...prev, priority }));
+  function handleSetPriority(priority: NonNullable<Priority>) {
+    updateIdea({ ideaId, priority });
   }
 
-  function addNote() {
+  async function handleAddNote() {
     if (!newNote.trim()) return;
-    const note: Note = {
-      id: Date.now().toString(),
-      text: newNote.trim(),
-      createdAt: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-    };
-    setIdea((prev) => ({ ...prev, notes: [...prev.notes, note] }));
+    await addNote({ ideaId, text: newNote.trim(), userId: TEMP_USER_ID });
     setNewNote("");
   }
 
@@ -145,7 +149,10 @@ export default function IdeaDetailScreen() {
         {
           text: "Archive",
           style: "destructive",
-          onPress: () => router.back(),
+          onPress: async () => {
+            await updateIdea({ ideaId, status: "archived" });
+            router.back();
+          },
         },
       ],
     );
@@ -153,18 +160,18 @@ export default function IdeaDetailScreen() {
 
   return (
     <View className="flex-1">
-      {/* ── Header ── */}
+      {/* Header */}
       <SafeAreaView
         className="flex-row items-center justify-between px-5 pt-3 pb-0"
         style={{ backgroundColor: Colors.primaryDark }}
       >
         <TouchableOpacity
-          onPress={() => router.push("/(tabs)")}
+          onPress={() => router.back()}
           className="flex-row items-center gap-1"
         >
           <Ionicons name="chevron-back" size={20} color={Colors.accentTeal} />
-          <Text className="text-[14px]" style={{ color: Colors.accentTeal }}>
-            The Lot
+          <Text className="text-[15px]" style={{ color: Colors.accentTeal }}>
+            Back
           </Text>
         </TouchableOpacity>
 
@@ -177,14 +184,14 @@ export default function IdeaDetailScreen() {
 
         <TouchableOpacity>
           <Ionicons
-            name="arrow-down-circle-outline"
-            size={24}
+            name="ellipsis-vertical"
+            size={20}
             color={Colors.accentTeal}
           />
         </TouchableOpacity>
       </SafeAreaView>
 
-      {/* ── Scrollable body ── */}
+      {/* Scrollable body */}
       <ScrollView
         className="flex-1 px-4 pt-4"
         style={{ backgroundColor: Colors.screenBg }}
@@ -192,7 +199,7 @@ export default function IdeaDetailScreen() {
         contentContainerStyle={{ paddingBottom: 48 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* ── Idea text card ── */}
+        {/* Idea text card */}
         <SectionCard>
           <View className="flex-row gap-3">
             <View
@@ -212,9 +219,9 @@ export default function IdeaDetailScreen() {
             style={{ borderColor: Colors.cardBorder }}
           >
             <Text className="text-[12px]" style={{ color: Colors.textMuted }}>
-              Added {idea.addedDate}
+              Added {formatDate(idea.createdAt)}
             </Text>
-            {idea.daysOld >= 1 && (
+            {daysOld >= 1 && (
               <View
                 className="rounded-[10px] px-2 py-0.5"
                 style={{ backgroundColor: Colors.ageBadgeBg }}
@@ -223,14 +230,14 @@ export default function IdeaDetailScreen() {
                   className="text-[11px] font-semibold"
                   style={{ color: Colors.ageBadgeText }}
                 >
-                  {idea.daysOld} DAYS OLD
+                  {daysOld} DAYS OLD
                 </Text>
               </View>
             )}
           </View>
         </SectionCard>
 
-        {/* ── Status ── */}
+        {/* Status */}
         <SectionCard>
           <SectionLabel label="Status" />
           <View className="flex-row gap-2">
@@ -244,11 +251,11 @@ export default function IdeaDetailScreen() {
                     backgroundColor: active ? Colors.brandTeal : Colors.cardBg,
                     borderColor: active ? Colors.brandTeal : Colors.cardBorder,
                   }}
-                  onPress={() => setStatus(s)}
+                  onPress={() => handleSetStatus(s)}
                   activeOpacity={0.75}
                 >
                   <Text
-                    className="text-[13px] font-medium capitalize"
+                    className="text-[13px] font-medium"
                     style={{ color: active ? "#FFFFFF" : Colors.textSubtle }}
                   >
                     {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -259,7 +266,7 @@ export default function IdeaDetailScreen() {
           </View>
         </SectionCard>
 
-        {/* ── Priority ── */}
+        {/* Priority */}
         <SectionCard>
           <SectionLabel label="Priority" />
           <View className="flex-row gap-2">
@@ -291,7 +298,7 @@ export default function IdeaDetailScreen() {
                     backgroundColor: active ? activeBg[p] : Colors.cardBg,
                     borderColor: active ? activeBorder[p] : Colors.cardBorder,
                   }}
-                  onPress={() => setPriority(p)}
+                  onPress={() => handleSetPriority(p)}
                   activeOpacity={0.75}
                 >
                   <View
@@ -312,13 +319,13 @@ export default function IdeaDetailScreen() {
           </View>
         </SectionCard>
 
-        {/* ── Tags ── */}
+        {/* Tags */}
         <SectionCard>
           <SectionLabel label="Tags" />
           <View className="flex-row flex-wrap gap-2 items-center">
-            {idea.tags.map((tag) => (
+            {idea.tags.map((tag: any) => (
               <View
-                key={tag}
+                key={tag._id}
                 className="rounded-[10px] px-3 py-1"
                 style={{ backgroundColor: Colors.lightTeal }}
               >
@@ -326,7 +333,7 @@ export default function IdeaDetailScreen() {
                   className="text-[13px] font-medium"
                   style={{ color: Colors.textSubtle }}
                 >
-                  {tag}
+                  {tag.name}
                 </Text>
               </View>
             ))}
@@ -334,7 +341,10 @@ export default function IdeaDetailScreen() {
               onPress={() =>
                 router.push({
                   pathname: "/tag-picker",
-                  params: { selected: JSON.stringify(idea.tags) },
+                  params: {
+                    ideaId: idea._id,
+                    selected: JSON.stringify(idea.tags.map((t: any) => t._id)),
+                  },
                 })
               }
               className="flex-row items-center gap-1 rounded-[10px] px-3 py-1 border border-dashed"
@@ -350,7 +360,7 @@ export default function IdeaDetailScreen() {
           </View>
         </SectionCard>
 
-        {/* ── Collection ── */}
+        {/* Collection */}
         {idea.collection && (
           <SectionCard>
             <TouchableOpacity
@@ -372,7 +382,7 @@ export default function IdeaDetailScreen() {
                 className="flex-1 text-[15px] font-medium"
                 style={{ color: Colors.textPrimary }}
               >
-                {idea.collection}
+                {idea.collection.name}
               </Text>
               <Ionicons
                 name="chevron-forward"
@@ -383,7 +393,27 @@ export default function IdeaDetailScreen() {
           </SectionCard>
         )}
 
-        {/* ── Notes ── */}
+        <TouchableOpacity
+          onPress={() =>
+            router.push({
+              pathname: "/collection/[id]",
+              params: {
+                id: idea.collectionId || "", // Pass empty string if no collectionId to avoid undefined
+              },
+            })
+          }
+          className="flex-row items-center gap-1 rounded-[10px] px-3 py-1 border border-dashed"
+          style={{ borderColor: Colors.brandTeal }}
+        >
+          <Text
+            className="text-[13px] text-center font-medium"
+            style={{ color: Colors.brandTeal }}
+          >
+            Collection
+          </Text>
+        </TouchableOpacity>
+
+        {/* Notes */}
         <SectionCard>
           <View className="flex-row justify-between items-center mb-3">
             <SectionLabel label="Notes" />
@@ -395,8 +425,8 @@ export default function IdeaDetailScreen() {
             </Text>
           </View>
 
-          {idea.notes.map((note, index) => (
-            <View key={note.id}>
+          {idea.notes.map((note: any, index: number) => (
+            <View key={note._id}>
               {index > 0 && (
                 <View
                   className="h-[0.5px] my-3"
@@ -410,7 +440,7 @@ export default function IdeaDetailScreen() {
                 {note.text}
               </Text>
               <Text className="text-[12px]" style={{ color: Colors.textMuted }}>
-                {note.createdAt}
+                {formatNoteDate(note.createdAt)}
               </Text>
             </View>
           ))}
@@ -435,14 +465,14 @@ export default function IdeaDetailScreen() {
               placeholderTextColor={Colors.textMuted}
               value={newNote}
               onChangeText={setNewNote}
-              onSubmitEditing={addNote}
+              onSubmitEditing={handleAddNote}
               returnKeyType="done"
               multiline={false}
             />
           </View>
         </SectionCard>
 
-        {/* ── Archive ── */}
+        {/* Archive */}
         <TouchableOpacity
           className="flex-row items-center justify-center gap-2 py-4 mt-2"
           onPress={confirmArchive}

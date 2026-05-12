@@ -1,8 +1,11 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   ScrollView,
   Text,
@@ -12,97 +15,15 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// TODO: replace with Clerk useAuth() once auth is set up
+const TEMP_USER_ID = "temp_user_1";
+
+// Types
 
 type Priority = "hot" | "warm" | "cold" | null;
-type Status = "active" | "complete" | "archived";
-type StatusFilter = "all" | Status;
+type StatusFilter = "all" | "active" | "complete" | "archived";
 
-interface Tag {
-  id: string;
-  label: string;
-}
-
-interface Idea {
-  id: string;
-  text: string;
-  priority: Priority;
-  status: Status;
-  tags: Tag[];
-  daysOld: number;
-}
-
-// ─── Seed data (replace with Convex useQuery + searchIdeas later) ─────────────
-
-const SEED_IDEAS: Idea[] = [
-  {
-    id: "1",
-    text: "Build a habit tracker app — 15 min daily sessions only",
-    priority: "hot",
-    status: "active",
-    tags: [
-      { id: "t1", label: "apps" },
-      { id: "t2", label: "productivity" },
-    ],
-    daysOld: 1,
-  },
-  {
-    id: "2",
-    text: "Freelance rate calculator for designers — what's the real MVP?",
-    priority: "hot",
-    status: "active",
-    tags: [
-      { id: "t3", label: "business" },
-      { id: "t1", label: "apps" },
-    ],
-    daysOld: 2,
-  },
-  {
-    id: "3",
-    text: "Write a thread on the mistake of scaling too early",
-    priority: "warm",
-    status: "active",
-    tags: [{ id: "t4", label: "content" }],
-    daysOld: 5,
-  },
-  {
-    id: "4",
-    text: "Lo-fi YouTube channel — study beats with a live visual timer",
-    priority: "warm",
-    status: "active",
-    tags: [
-      { id: "t4", label: "content" },
-      { id: "t5", label: "creative" },
-    ],
-    daysOld: 8,
-  },
-  {
-    id: "5",
-    text: "Try Expo DOM components — is it production ready yet?",
-    priority: "cold",
-    status: "active",
-    tags: [{ id: "t6", label: "dev" }],
-    daysOld: 32,
-  },
-  {
-    id: "6",
-    text: "Build a Pomodoro timer with ambient sound packs",
-    priority: "warm",
-    status: "complete",
-    tags: [{ id: "t1", label: "apps" }],
-    daysOld: 14,
-  },
-  {
-    id: "7",
-    text: "Newsletter idea — weekly roundup of indie app launches",
-    priority: "cold",
-    status: "archived",
-    tags: [{ id: "t4", label: "content" }],
-    daysOld: 45,
-  },
-];
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// Helpers
 
 const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
   hot: Colors.hot,
@@ -112,6 +33,10 @@ const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
 
 const AGE_THRESHOLD_DAYS = 30;
 
+function getDaysOld(createdAt: number): number {
+  return Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+}
+
 function formatRelativeTime(daysOld: number): string {
   if (daysOld === 0) return "Today";
   if (daysOld === 1) return "1d ago";
@@ -120,7 +45,7 @@ function formatRelativeTime(daysOld: number): string {
   return `${Math.floor(daysOld / 30)}mo ago`;
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// Sub-components
 
 function TagPill({ label }: { label: string }) {
   return (
@@ -154,11 +79,12 @@ function AgeBadge({ days }: { days: number }) {
   );
 }
 
-function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+function IdeaCard({ idea, onPress }: { idea: any; onPress: () => void }) {
+  const daysOld = getDaysOld(idea.createdAt);
   const barColor = idea.priority
-    ? PRIORITY_BAR[idea.priority]
+    ? PRIORITY_BAR[idea.priority as NonNullable<Priority>]
     : Colors.cardBorder;
-  const isAged = idea.daysOld >= AGE_THRESHOLD_DAYS;
+  const isAged = daysOld >= AGE_THRESHOLD_DAYS;
 
   return (
     <TouchableOpacity
@@ -180,24 +106,22 @@ function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
         </Text>
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row flex-wrap gap-1.5 flex-1">
-            {idea.tags.map((tag) => (
-              <TagPill key={tag.id} label={tag.label} />
+            {idea.tags?.map((tag: any) => (
+              <TagPill key={tag._id} label={tag.name} />
             ))}
-            {isAged && <AgeBadge days={idea.daysOld} />}
+            {isAged && <AgeBadge days={daysOld} />}
           </View>
           <Text
             className="text-[11px] flex-shrink-0"
             style={{ color: Colors.textMuted }}
           >
-            {formatRelativeTime(idea.daysOld)}
+            {formatRelativeTime(daysOld)}
           </Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 }
-
-// ─── Status filter chip ───────────────────────────────────────────────────────
 
 const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
   { label: "All statuses", value: "all" },
@@ -236,8 +160,6 @@ function StatusChip({
   );
 }
 
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
 function EmptyState({ query }: { query: string }) {
   return (
     <View className="items-center pt-20 px-10 gap-3">
@@ -269,34 +191,41 @@ function EmptyState({ query }: { query: string }) {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
-  // Client-side filter (replace with Convex searchIdeas query later)
+  //  ── Debounce: only fires Convex query when user pauses typing (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  //  ── Convex search
+  //  undefined = in-flight, [] = no results or blank query
+  const searchResults = useQuery(api.ideas.searchIdeas, {
+    userId: TEMP_USER_ID,
+    query: debouncedQuery,
+  });
+
+  //  ── Client-side status filter on search results
   const results = useMemo(() => {
-    return SEED_IDEAS.filter((idea) => {
-      const matchesQuery =
-        query.trim() === "" ||
-        idea.text.toLowerCase().includes(query.toLowerCase()) ||
-        idea.tags.some((t) =>
-          t.label.toLowerCase().includes(query.toLowerCase()),
-        );
+    if (!searchResults) return [];
+    if (statusFilter === "all") return searchResults;
+    return searchResults.filter((idea) => idea?.status === statusFilter);
+  }, [searchResults, statusFilter]);
 
-      const matchesStatus =
-        statusFilter === "all" || idea.status === statusFilter;
-
-      return matchesQuery && matchesStatus;
-    });
-  }, [query, statusFilter]);
+  //  Show spinner inside input when a search is actively loading
+  const isSearching =
+    debouncedQuery.trim().length > 0 && searchResults === undefined;
 
   return (
     <View className="flex-1">
       <SafeAreaView style={{ backgroundColor: Colors.primaryDark }}>
-        {/* ── Header ── */}
         <View
           className="px-5 pt-4 pb-3"
           style={{ backgroundColor: Colors.primaryDark }}
@@ -330,6 +259,9 @@ export default function SearchScreen() {
               autoCapitalize="none"
               clearButtonMode="while-editing"
             />
+            {isSearching && (
+              <ActivityIndicator size="small" color={Colors.accentTeal} />
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -361,18 +293,23 @@ export default function SearchScreen() {
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
         <FlatList
           data={results}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item!._id}
           renderItem={({ item }) => (
             <IdeaCard
               idea={item}
-              onPress={() => router.push(`/idea/${item.id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: "/idea/[id]",
+                  params: { id: item!._id },
+                })
+              }
             />
           )}
           contentContainerStyle={{ paddingTop: 4, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          ListEmptyComponent={<EmptyState query={query} />}
+          ListEmptyComponent={<EmptyState query={debouncedQuery} />}
         />
       </View>
     </View>

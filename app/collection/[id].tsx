@@ -1,8 +1,12 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { Ionicons } from "@expo/vector-icons";
+import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   FlatList,
   Platform,
@@ -13,87 +17,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type Priority = "hot" | "warm" | "cold" | null;
-type Status = "active" | "complete" | "archived";
 type Filter = "all" | "hot" | "warm" | "cold";
-
-interface Tag {
-  id: string;
-  label: string;
-}
-
-interface Idea {
-  id: string;
-  text: string;
-  priority: Priority;
-  status: Status;
-  tags: Tag[];
-  daysOld: number;
-}
-
-interface Collection {
-  id: string;
-  name: string;
-  ideas: Idea[];
-}
-
-// ─── Seed data (replace with Convex useQuery later) ───────────────────────────
-
-const SEED_COLLECTIONS: Record<string, Collection> = {
-  "1": {
-    id: "1",
-    name: "App Ideas",
-    ideas: [
-      {
-        id: "i1",
-        text: "Build a habit tracker app that focuses on negative space instead of streaks",
-        priority: "hot",
-        status: "active",
-        tags: [
-          { id: "t1", label: "apps" },
-          { id: "t2", label: "productivity" },
-        ],
-        daysOld: 1,
-      },
-      {
-        id: "i2",
-        text: "Freelance rate calculator for designers based on project value",
-        priority: "hot",
-        status: "active",
-        tags: [{ id: "t3", label: "business" }],
-        daysOld: 2,
-      },
-      {
-        id: "i3",
-        text: "Try the new Expo Router parallel routes feature",
-        priority: "warm",
-        status: "active",
-        tags: [{ id: "t6", label: "dev" }],
-        daysOld: 4,
-      },
-      {
-        id: "i4",
-        text: "Experiment with Convex real-time for a collab tool",
-        priority: "warm",
-        status: "active",
-        tags: [{ id: "t6", label: "dev" }],
-        daysOld: 6,
-      },
-      {
-        id: "i5",
-        text: "Try Expo DOM components for web parity",
-        priority: "cold",
-        status: "active",
-        tags: [{ id: "t6", label: "dev" }],
-        daysOld: 32,
-      },
-    ],
-  },
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PRIORITY_BAR: Record<NonNullable<Priority>, string> = {
   hot: Colors.hot,
@@ -109,6 +34,10 @@ const FILTER_DOT: Record<Exclude<Filter, "all">, string> = {
 
 const AGE_THRESHOLD_DAYS = 30;
 
+function getDaysOld(createdAt: number): number {
+  return Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24));
+}
+
 function formatRelativeTime(daysOld: number): string {
   if (daysOld === 0) return "Today";
   if (daysOld === 1) return "1d ago";
@@ -116,8 +45,6 @@ function formatRelativeTime(daysOld: number): string {
   if (daysOld < 30) return `${Math.floor(daysOld / 7)}w ago`;
   return `${Math.floor(daysOld / 30)}mo ago`;
 }
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
 
 function TagPill({ label }: { label: string }) {
   return (
@@ -151,11 +78,12 @@ function AgeBadge({ days }: { days: number }) {
   );
 }
 
-function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
+function IdeaCard({ idea, onPress }: { idea: any; onPress: () => void }) {
+  const daysOld = getDaysOld(idea.createdAt);
   const barColor = idea.priority
-    ? PRIORITY_BAR[idea.priority]
+    ? PRIORITY_BAR[idea.priority as NonNullable<Priority>]
     : Colors.cardBorder;
-  const isAged = idea.daysOld >= AGE_THRESHOLD_DAYS;
+  const isAged = daysOld >= AGE_THRESHOLD_DAYS;
 
   return (
     <TouchableOpacity
@@ -169,10 +97,9 @@ function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
         style={{ backgroundColor: barColor }}
       />
       <View className="flex-1 px-3.5 pt-3 pb-2.5">
-        {/* Age badge top-right if aged */}
         {isAged && (
           <View className="absolute top-3 right-3">
-            <AgeBadge days={idea.daysOld} />
+            <AgeBadge days={daysOld} />
           </View>
         )}
         <Text
@@ -183,15 +110,15 @@ function IdeaCard({ idea, onPress }: { idea: Idea; onPress: () => void }) {
         </Text>
         <View className="flex-row items-center justify-between gap-2">
           <View className="flex-row flex-wrap gap-1.5 flex-1">
-            {idea.tags.map((tag) => (
-              <TagPill key={tag.id} label={tag.label} />
+            {idea.tags?.map((tag: any) => (
+              <TagPill key={tag._id} label={tag.name} />
             ))}
           </View>
           <Text
             className="text-sm flex-shrink-0"
             style={{ color: Colors.textMuted }}
           >
-            {formatRelativeTime(idea.daysOld)}
+            {formatRelativeTime(daysOld)}
           </Text>
         </View>
       </View>
@@ -241,16 +168,47 @@ function FilterChip({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function CollectionScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const collectionId = id as Id<"collections">;
+
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
 
-  // Fetch collection (replace with Convex useQuery later)
-  const collection = SEED_COLLECTIONS[id ?? "1"];
+  // Convex
+  const collection = useQuery(api.collections.getCollectionById, {
+    collectionId,
+  });
+  const ideas = useQuery(api.collections.getIdeasByCollection, {
+    collectionId,
+  });
+  const deleteCollection = useMutation(api.collections.deleteCollection);
+  const updateCollection = useMutation(api.collections.updateCollection);
 
+  const isLoading = collection === undefined || ideas === undefined;
+
+  // Client-side priority filter
+  const filteredIdeas =
+    ideas?.filter((idea) => {
+      if (activeFilter === "all") return true;
+      return idea?.priority === activeFilter;
+    }) ?? [];
+
+  // Loading
+  if (isLoading) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: Colors.screenBg }}
+      >
+        <ActivityIndicator size="large" color={Colors.brandTeal} />
+      </View>
+    );
+  }
+
+  // Not found
   if (!collection) {
     return (
       <SafeAreaView
@@ -262,10 +220,62 @@ export default function CollectionScreen() {
     );
   }
 
-  const filteredIdeas = collection.ideas.filter((idea) => {
-    if (activeFilter === "all") return true;
-    return idea.priority === activeFilter;
-  });
+  // Handlers
+
+  function handleOverflowMenu() {
+    Alert.alert(collection!.name, "Collection options", [
+      { text: "Rename", onPress: handleRename },
+      {
+        text: "Delete collection",
+        style: "destructive",
+        onPress: confirmDelete,
+      },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  function handleRename() {
+    if (Platform.OS === "ios") {
+      Alert.prompt(
+        "Rename collection",
+        `Current name: ${collection!.name}`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Save",
+            onPress: (newName: string | undefined) => {
+              if (newName?.trim() && newName.trim() !== collection!.name) {
+                updateCollection({ collectionId, name: newName.trim() });
+              }
+            },
+          },
+        ],
+        "plain-text",
+        collection!.name,
+      );
+    } else {
+      // Android — TODO: build a rename bottom sheet
+      console.log("Rename not yet supported on Android — build rename sheet");
+    }
+  }
+
+  function confirmDelete() {
+    Alert.alert(
+      `Delete "${collection!.name}"?`,
+      `This removes the collection. The ${ideas?.length ?? 0} idea${(ideas?.length ?? 0) === 1 ? "" : "s"} inside will be kept but unassigned.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await deleteCollection({ collectionId });
+            router.back();
+          },
+        },
+      ],
+    );
+  }
 
   const filters: { label: string; value: Filter }[] = [
     { label: "All", value: "all" },
@@ -273,21 +283,6 @@ export default function CollectionScreen() {
     { label: "Warm", value: "warm" },
     { label: "Cold", value: "cold" },
   ];
-
-  function handleOverflowMenu() {
-    Alert.alert(collection.name, "Collection options", [
-      { text: "Rename", onPress: () => console.log("Rename collection") },
-      {
-        text: "Delete collection",
-        style: "destructive",
-        onPress: () => {
-          // TODO: Convex deleteCollection mutation
-          router.back();
-        },
-      },
-      { text: "Cancel", style: "cancel" },
-    ]);
-  }
 
   return (
     <View className="flex-1">
@@ -360,11 +355,16 @@ export default function CollectionScreen() {
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
         <FlatList
           data={filteredIdeas}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item!._id}
           renderItem={({ item }) => (
             <IdeaCard
               idea={item}
-              onPress={() => router.push(`/idea/${item.id}`)}
+              onPress={() =>
+                router.push({
+                  pathname: "/idea/[id]",
+                  params: { id: item!._id },
+                })
+              }
             />
           )}
           contentContainerStyle={{ paddingTop: 14, paddingBottom: 120 }}

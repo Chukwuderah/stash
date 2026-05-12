@@ -1,36 +1,33 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import { tagSelection } from "@/utils/tagSelection";
+import { AntDesign } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useRouter } from "expo-router";
+import { useMutation, useQuery } from "convex/react";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
 
-// ─── Seed tags (replace with Convex useQuery later) ───────────────────────────
-
-const SEED_TAGS = [
-  "apps",
-  "productivity",
-  "content",
-  "business",
-  "creative",
-  "dev",
-];
+// TODO: replace with Clerk useAuth() once auth is set up
+const TEMP_USER_ID = "temp_user_1";
 
 const MAX_CHARS = 280;
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function QuickAddScreen() {
   const router = useRouter();
@@ -38,29 +35,53 @@ export default function QuickAddScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const [text, setText] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Id<"tags">[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const snapPoints = useMemo(() => ["55%"], []);
-  const charsLeft = MAX_CHARS - text.length;
+  useFocusEffect(
+    useCallback(() => {
+      const pending = tagSelection.get();
+      if (pending.length > 0) {
+        setSelectedTags(pending);
+        tagSelection.clear();
+      }
+    }, []),
+  );
 
-  // Open sheet and focus input on mount
+  const snapPoints = useMemo(() => ["85%", "92%"], []);
+
+  // Convex
+  const tags = useQuery(api.tags.getTags, { userId: TEMP_USER_ID });
+  const createIdea = useMutation(api.ideas.createIdea);
+
   useEffect(() => {
     bottomSheetRef.current?.expand();
     const timer = setTimeout(() => inputRef.current?.focus(), 200);
     return () => clearTimeout(timer);
   }, []);
 
-  function toggleTag(tag: string) {
+  // Handlers
+
+  function toggleTag(tagId: Id<"tags">) {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId],
     );
   }
 
-  function handleStash() {
-    if (!text.trim()) return;
-    // TODO: replace with Convex createIdea mutation
-    console.log("Stashing:", { text: text.trim(), tags: selectedTags });
-    router.back();
+  async function handleStash() {
+    if (!text.trim() || isSubmitting) return;
+    setIsSubmitting(true);
+    try {
+      await createIdea({
+        text: text.trim(),
+        userId: TEMP_USER_ID,
+        tagIds: selectedTags,
+      });
+      router.back();
+    } catch (error) {
+      console.error("Failed to create idea:", error);
+      setIsSubmitting(false);
+    }
   }
 
   function handleClose() {
@@ -85,10 +106,10 @@ export default function QuickAddScreen() {
     [],
   );
 
+  const canSubmit = text.trim().length > 0 && !isSubmitting;
+
   return (
     <View className="flex-1">
-      <StatusBar barStyle="light-content" />
-
       <BottomSheet
         ref={bottomSheetRef}
         index={0}
@@ -115,7 +136,7 @@ export default function QuickAddScreen() {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             className="flex-1"
           >
-            {/* ── Sheet header ── */}
+            {/* ── Header ── */}
             <View className="flex-row items-center justify-between px-5 pt-1 pb-2">
               <Text
                 className="text-[17px] font-semibold"
@@ -142,7 +163,7 @@ export default function QuickAddScreen() {
                 minHeight: 80,
                 textAlignVertical: "top",
               }}
-              placeholder="What's the idea?"
+              placeholder="What's the big idea?"
               placeholderTextColor={Colors.accentTeal}
               value={text}
               onChangeText={(val) => val.length <= MAX_CHARS && setText(val)}
@@ -169,31 +190,35 @@ export default function QuickAddScreen() {
                 alignItems: "center",
               }}
             >
-              {SEED_TAGS.map((tag) => {
-                const active = selectedTags.includes(tag);
+              {tags === undefined && (
+                <ActivityIndicator size="small" color={Colors.brandTeal} />
+              )}
+
+              {tags?.map((tag) => {
+                const active = selectedTags.includes(tag._id);
                 return (
                   <TouchableOpacity
-                    key={tag}
+                    key={tag._id}
                     className="rounded-full px-3.5 py-1.5"
                     style={{
                       backgroundColor: active
                         ? Colors.brandTeal
                         : Colors.lightTeal,
                     }}
-                    onPress={() => toggleTag(tag)}
+                    onPress={() => toggleTag(tag._id)}
                     activeOpacity={0.75}
                   >
                     <Text
                       className="text-[13px] font-medium"
                       style={{ color: active ? "#FFFFFF" : Colors.textSubtle }}
                     >
-                      {tag}
+                      {tag.name}
                     </Text>
                   </TouchableOpacity>
                 );
               })}
 
-              {/* + add new tag */}
+              {/* Open full tag picker */}
               <TouchableOpacity
                 onPress={() =>
                   router.push({
@@ -205,12 +230,7 @@ export default function QuickAddScreen() {
                 style={{ borderColor: Colors.brandTeal }}
                 activeOpacity={0.75}
               >
-                <Text
-                  className="text-[18px] leading-5"
-                  style={{ color: Colors.brandTeal }}
-                >
-                  +
-                </Text>
+                <AntDesign name="plus" size={16} color={Colors.brandTeal} />
               </TouchableOpacity>
             </ScrollView>
 
@@ -224,26 +244,27 @@ export default function QuickAddScreen() {
               </Text>
 
               <TouchableOpacity
-                className="rounded-full px-6 py-2.5"
+                className="rounded-full px-6 py-2.5 items-center justify-center"
                 style={{
-                  backgroundColor:
-                    text.trim().length > 0
-                      ? Colors.brandTeal
-                      : Colors.cardBorder,
+                  backgroundColor: canSubmit
+                    ? Colors.brandTeal
+                    : Colors.cardBorder,
+                  minWidth: 96,
                 }}
                 onPress={handleStash}
                 activeOpacity={0.8}
-                disabled={text.trim().length === 0}
+                disabled={!canSubmit}
               >
-                <Text
-                  className="text-[15px] font-semibold"
-                  style={{
-                    color:
-                      text.trim().length > 0 ? "#FFFFFF" : Colors.textMuted,
-                  }}
-                >
-                  Stash it
-                </Text>
+                {isSubmitting ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text
+                    className="text-[15px] font-semibold"
+                    style={{ color: canSubmit ? "#FFFFFF" : Colors.textMuted }}
+                  >
+                    Stash it
+                  </Text>
+                )}
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>

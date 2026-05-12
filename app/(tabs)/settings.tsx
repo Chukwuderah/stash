@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
+import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
+import { useMutation, useQuery } from "convex/react";
 import {
   Alert,
   Linking,
@@ -12,13 +13,21 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// TODO: replace with Clerk useAuth() + useUser() once auth is set up
+const TEMP_USER_ID = "temp_user_1";
 
 type Cadence = "Daily" | "Every 2 days" | "Weekly";
 type AgingThreshold = "30 days" | "60 days" | "90 days";
 type SortOrder = "Newest first" | "Oldest first";
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// Defaults (shown while prefs load or on first launch)
+
+const DEFAULTS = {
+  dailyNudge: true,
+  cadence: "Daily" as Cadence,
+  agingThreshold: "30 days" as AgingThreshold,
+  sortOrder: "Newest first" as SortOrder,
+};
 
 function SectionCard({ children }: { children: React.ReactNode }) {
   return (
@@ -101,22 +110,38 @@ function SettingsRow({
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// Main screen
 
 export default function SettingsScreen() {
-  // Local state (replace with Convex user prefs later)
-  const [dailyNudge, setDailyNudge] = useState(true);
-  const [cadence, setCadence] = useState<Cadence>("Daily");
-  const [agingThreshold, setAgingThreshold] =
-    useState<AgingThreshold>("30 days");
-  const [sortOrder, setSortOrder] = useState<SortOrder>("Newest first");
+  // Convex
+  const prefs = useQuery(api.userPreferences.getUserPreferences, {
+    userId: TEMP_USER_ID,
+  });
+  const setPrefs = useMutation(api.userPreferences.setUserPreferences);
+
+  // Resolved values — persisted prefs or defaults while loading / first launch
+  const dailyNudge = prefs?.dailyNudge ?? DEFAULTS.dailyNudge;
+  const cadence = prefs?.cadence ?? DEFAULTS.cadence;
+  const agingThreshold = prefs?.agingThreshold ?? DEFAULTS.agingThreshold;
+  const sortOrder = prefs?.sortOrder ?? DEFAULTS.sortOrder;
 
   // Pickers
+
   function pickCadence() {
     Alert.alert("Cadence", "How often should we resurface an old idea?", [
-      { text: "Daily", onPress: () => setCadence("Daily") },
-      { text: "Every 2 days", onPress: () => setCadence("Every 2 days") },
-      { text: "Weekly", onPress: () => setCadence("Weekly") },
+      {
+        text: "Daily",
+        onPress: () => setPrefs({ userId: TEMP_USER_ID, cadence: "Daily" }),
+      },
+      {
+        text: "Every 2 days",
+        onPress: () =>
+          setPrefs({ userId: TEMP_USER_ID, cadence: "Every 2 days" }),
+      },
+      {
+        text: "Weekly",
+        onPress: () => setPrefs({ userId: TEMP_USER_ID, cadence: "Weekly" }),
+      },
       { text: "Cancel", style: "cancel" },
     ]);
   }
@@ -126,9 +151,21 @@ export default function SettingsScreen() {
       "Age badge after",
       "Show the age badge when an idea is older than:",
       [
-        { text: "30 days", onPress: () => setAgingThreshold("30 days") },
-        { text: "60 days", onPress: () => setAgingThreshold("60 days") },
-        { text: "90 days", onPress: () => setAgingThreshold("90 days") },
+        {
+          text: "30 days",
+          onPress: () =>
+            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "30 days" }),
+        },
+        {
+          text: "60 days",
+          onPress: () =>
+            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "60 days" }),
+        },
+        {
+          text: "90 days",
+          onPress: () =>
+            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "90 days" }),
+        },
         { text: "Cancel", style: "cancel" },
       ],
     );
@@ -136,8 +173,16 @@ export default function SettingsScreen() {
 
   function pickSortOrder() {
     Alert.alert("Default sort", "How should ideas be sorted in your feed?", [
-      { text: "Newest first", onPress: () => setSortOrder("Newest first") },
-      { text: "Oldest first", onPress: () => setSortOrder("Oldest first") },
+      {
+        text: "Newest first",
+        onPress: () =>
+          setPrefs({ userId: TEMP_USER_ID, sortOrder: "Newest first" }),
+      },
+      {
+        text: "Oldest first",
+        onPress: () =>
+          setPrefs({ userId: TEMP_USER_ID, sortOrder: "Oldest first" }),
+      },
       { text: "Cancel", style: "cancel" },
     ]);
   }
@@ -153,7 +198,7 @@ export default function SettingsScreen() {
         text: "Sign out",
         style: "destructive",
         onPress: () => {
-          // TODO: Clerk signOut()
+          // TODO: Clerk signOut() — wired up when auth is set up
           console.log("Signing out");
         },
       },
@@ -166,7 +211,6 @@ export default function SettingsScreen() {
         className="px-6 pt-6 pb-3"
         style={{ backgroundColor: Colors.primaryDark }}
       >
-        {/* ── Header ── */}
         <Text
           className="text-[29px] font-semibold tracking-tight"
           style={{ color: Colors.textOnDark }}
@@ -175,7 +219,6 @@ export default function SettingsScreen() {
         </Text>
       </SafeAreaView>
 
-      {/* ── Body ── */}
       <ScrollView
         className="flex-1 px-4 pt-4"
         style={{ backgroundColor: Colors.screenBg }}
@@ -183,6 +226,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* ── Profile ── */}
+        {/* TODO: replace hardcoded values with Clerk useUser() data */}
         <SectionCard>
           <TouchableOpacity
             className="flex-row items-center gap-4 px-4 py-4"
@@ -216,8 +260,6 @@ export default function SettingsScreen() {
         {/* ── Resurfacing ── */}
         <SectionCard>
           <SectionLabel label="Resurfacing" />
-
-          {/* Daily nudge toggle */}
           <View className="flex-row items-center justify-between px-4 pb-4">
             <View className="flex-1 gap-0.5 pr-4">
               <Text
@@ -235,11 +277,10 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={dailyNudge}
-              onValueChange={setDailyNudge}
-              trackColor={{
-                false: Colors.cardBorder,
-                true: Colors.brandTeal,
+              onValueChange={(value) => {
+                setPrefs({ userId: TEMP_USER_ID, dailyNudge: value });
               }}
+              trackColor={{ false: Colors.cardBorder, true: Colors.brandTeal }}
               thumbColor="#FFFFFF"
               ios_backgroundColor={Colors.cardBorder}
             />
@@ -247,7 +288,6 @@ export default function SettingsScreen() {
 
           <Divider />
 
-          {/* Cadence */}
           <SettingsRow
             label="Cadence"
             value={cadence}
@@ -281,7 +321,6 @@ export default function SettingsScreen() {
         <SectionCard>
           <SectionLabel label="Account" />
 
-          {/* Notifications */}
           <SettingsRow
             label="Notifications"
             value="Enabled"
@@ -298,7 +337,6 @@ export default function SettingsScreen() {
 
           <Divider />
 
-          {/* Sign out */}
           <TouchableOpacity
             className="px-4 py-4"
             onPress={handleSignOut}
