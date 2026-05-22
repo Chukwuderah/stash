@@ -1,11 +1,30 @@
 import colors from "@/constants/colors";
+import { useAuth } from "@clerk/clerk-expo";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { Tabs } from "expo-router";
+import { Redirect, Tabs } from "expo-router";
 import React from "react";
-import { View } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 
 export default function TabsLayout() {
+  const { isSignedIn, isLoaded } = useAuth();
+
+  // Wait for Clerk to resolve before making any routing decision
+  if (!isLoaded) {
+    return (
+      <View
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: colors.primaryDark }}
+      >
+        <ActivityIndicator size="large" color={colors.brandTeal} />
+      </View>
+    );
+  }
+
+  if (!isSignedIn) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   function ActiveTabBar({
     children,
     focused,
