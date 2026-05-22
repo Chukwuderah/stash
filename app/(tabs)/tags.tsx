@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -14,9 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// TODO: replace with Clerk useAuth() once auth is set up
-const TEMP_USER_ID = "temp_user_1";
 
 // Types
 
@@ -77,8 +75,9 @@ function TagRow({
 export default function TagsScreen() {
   const router = useRouter();
 
-  // ── Convex
-  const tags = useQuery(api.tags.getTags, { userId: TEMP_USER_ID });
+
+  const userId = useUserId();
+  const tags = useQuery(api.tags.getTags, { userId });
   const deleteTag = useMutation(api.tags.deleteTag);
   const updateTag = useMutation(api.tags.updateTag);
 

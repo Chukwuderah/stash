@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import {
@@ -12,9 +13,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// TODO: replace with Clerk useAuth() + useUser() once auth is set up
-const TEMP_USER_ID = "temp_user_1";
 
 type Cadence = "Daily" | "Every 2 days" | "Weekly";
 type AgingThreshold = "30 days" | "60 days" | "90 days";
@@ -113,9 +111,9 @@ function SettingsRow({
 // Main screen
 
 export default function SettingsScreen() {
-  // Convex
+  const userId = useUserId();
   const prefs = useQuery(api.userPreferences.getUserPreferences, {
-    userId: TEMP_USER_ID,
+    userId,
   });
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 
@@ -131,16 +129,15 @@ export default function SettingsScreen() {
     Alert.alert("Cadence", "How often should we resurface an old idea?", [
       {
         text: "Daily",
-        onPress: () => setPrefs({ userId: TEMP_USER_ID, cadence: "Daily" }),
+        onPress: () => setPrefs({ userId, cadence: "Daily" }),
       },
       {
         text: "Every 2 days",
-        onPress: () =>
-          setPrefs({ userId: TEMP_USER_ID, cadence: "Every 2 days" }),
+        onPress: () => setPrefs({ userId, cadence: "Every 2 days" }),
       },
       {
         text: "Weekly",
-        onPress: () => setPrefs({ userId: TEMP_USER_ID, cadence: "Weekly" }),
+        onPress: () => setPrefs({ userId, cadence: "Weekly" }),
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -153,18 +150,15 @@ export default function SettingsScreen() {
       [
         {
           text: "30 days",
-          onPress: () =>
-            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "30 days" }),
+          onPress: () => setPrefs({ userId, agingThreshold: "30 days" }),
         },
         {
           text: "60 days",
-          onPress: () =>
-            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "60 days" }),
+          onPress: () => setPrefs({ userId, agingThreshold: "60 days" }),
         },
         {
           text: "90 days",
-          onPress: () =>
-            setPrefs({ userId: TEMP_USER_ID, agingThreshold: "90 days" }),
+          onPress: () => setPrefs({ userId, agingThreshold: "90 days" }),
         },
         { text: "Cancel", style: "cancel" },
       ],
@@ -175,13 +169,11 @@ export default function SettingsScreen() {
     Alert.alert("Default sort", "How should ideas be sorted in your feed?", [
       {
         text: "Newest first",
-        onPress: () =>
-          setPrefs({ userId: TEMP_USER_ID, sortOrder: "Newest first" }),
+        onPress: () => setPrefs({ userId, sortOrder: "Newest first" }),
       },
       {
         text: "Oldest first",
-        onPress: () =>
-          setPrefs({ userId: TEMP_USER_ID, sortOrder: "Oldest first" }),
+        onPress: () => setPrefs({ userId, sortOrder: "Oldest first" }),
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -278,7 +270,7 @@ export default function SettingsScreen() {
             <Switch
               value={dailyNudge}
               onValueChange={(value) => {
-                setPrefs({ userId: TEMP_USER_ID, dailyNudge: value });
+                setPrefs({ userId, dailyNudge: value });
               }}
               trackColor={{ false: Colors.cardBorder, true: Colors.brandTeal }}
               thumbColor="#FFFFFF"

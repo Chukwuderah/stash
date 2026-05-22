@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -15,9 +16,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// TODO: replace with Clerk useAuth() once auth is set up 
-const TEMP_USER_ID = "temp_user_1";
 
 // Types
 
@@ -85,6 +83,7 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 
 export default function IdeaDetailScreen() {
   const router = useRouter();
+  const userId = useUserId();
   const { id } = useLocalSearchParams<{ id: string }>();
   const ideaId = id as Id<"ideas">;
 
@@ -136,7 +135,7 @@ export default function IdeaDetailScreen() {
 
   async function handleAddNote() {
     if (!newNote.trim()) return;
-    await addNote({ ideaId, text: newNote.trim(), userId: TEMP_USER_ID });
+    await addNote({ ideaId, text: newNote.trim(), userId });
     setNewNote("");
   }
 

@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { useUserId } from "@/hooks/useUserId";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -14,9 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// ─── TODO: replace with Clerk useAuth() once auth is set up ───────────────────
-const TEMP_USER_ID = "temp_user_1";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,10 +176,11 @@ function FilterChip({
 export default function TheLotScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const userId = useUserId();
 
   // ── Convex query ──────────────────────────────────────────────────────────
   // undefined = loading, array = ready
-  const ideas = useQuery(api.ideas.getIdeas, { userId: TEMP_USER_ID });
+  const ideas = useQuery(api.ideas.getIdeas, { userId: userId });
 
   const filters: { label: string; value: Filter }[] = [
     { label: "All", value: "all" },

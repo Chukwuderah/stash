@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUserId } from "@/hooks/useUserId";
 import { tagSelection } from "@/utils/tagSelection";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -20,9 +21,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-
-// TODO: replace with Clerk useAuth() once auth is set up
-const TEMP_USER_ID = "temp_user_1";
 
 // Tag row
 
@@ -132,7 +130,8 @@ export default function TagPickerScreen() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Convex
-  const tags = useQuery(api.tags.getTags, { userId: TEMP_USER_ID });
+  const userId = useUserId();
+  const tags = useQuery(api.tags.getTags, { userId });
   const createTag = useMutation(api.tags.createTag);
   const addTagToIdea = useMutation(api.ideaTags.addTagToIdea);
   const removeTagFromIdea = useMutation(api.ideaTags.removeTagFromIdea);
@@ -174,7 +173,7 @@ export default function TagPickerScreen() {
       const newTagId = await createTag({
         name: query.trim(),
         color,
-        userId: TEMP_USER_ID,
+        userId,
       });
       setSelected((prev) => [...prev, newTagId]);
       setQuery("");

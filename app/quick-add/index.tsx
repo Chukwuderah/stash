@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useUserId } from "@/hooks/useUserId";
 import { tagSelection } from "@/utils/tagSelection";
 import { AntDesign } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -21,9 +22,6 @@ import {
   View,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
-
-// TODO: replace with Clerk useAuth() once auth is set up
-const TEMP_USER_ID = "temp_user_1";
 
 const MAX_CHARS = 280;
 
@@ -51,7 +49,8 @@ export default function QuickAddScreen() {
   const snapPoints = useMemo(() => ["85%", "92%"], []);
 
   // Convex
-  const tags = useQuery(api.tags.getTags, { userId: TEMP_USER_ID });
+  const userId = useUserId();
+  const tags = useQuery(api.tags.getTags, { userId });
   const createIdea = useMutation(api.ideas.createIdea);
 
   useEffect(() => {
@@ -74,7 +73,7 @@ export default function QuickAddScreen() {
     try {
       await createIdea({
         text: text.trim(),
-        userId: TEMP_USER_ID,
+        userId,
         tagIds: selectedTags,
       });
       router.back();

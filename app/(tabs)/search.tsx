@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -14,9 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-// TODO: replace with Clerk useAuth() once auth is set up
-const TEMP_USER_ID = "temp_user_1";
 
 // Types
 
@@ -205,10 +203,9 @@ export default function SearchScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  //  ── Convex search
-  //  undefined = in-flight, [] = no results or blank query
+  const userId = useUserId();
   const searchResults = useQuery(api.ideas.searchIdeas, {
-    userId: TEMP_USER_ID,
+    userId,
     query: debouncedQuery,
   });
 
