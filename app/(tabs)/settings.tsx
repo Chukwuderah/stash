@@ -1,8 +1,10 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import { useUserId } from "@/hooks/useUserId";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
+import { useRouter } from "expo-router";
 import {
   Alert,
   Linking,
@@ -117,6 +119,19 @@ export default function SettingsScreen() {
   });
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 
+  const { signOut } = useAuth();
+  const { user } = useUser();
+  const router = useRouter();
+
+  // Derived display values
+  const displayName = user?.fullName ?? user?.firstName ?? "—";
+  const displayEmail = user?.primaryEmailAddress?.emailAddress ?? "—";
+  const initials =
+    [user?.firstName?.[0], user?.lastName?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase() || "?";
+
   // Resolved values — persisted prefs or defaults while loading / first launch
   const dailyNudge = prefs?.dailyNudge ?? DEFAULTS.dailyNudge;
   const cadence = prefs?.cadence ?? DEFAULTS.cadence;
@@ -189,9 +204,8 @@ export default function SettingsScreen() {
       {
         text: "Sign out",
         style: "destructive",
-        onPress: () => {
-          // TODO: Clerk signOut() — wired up when auth is set up
-          console.log("Signing out");
+        onPress: async () => {
+          await signOut();
         },
       },
     ]);
@@ -218,7 +232,7 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {/* ── Profile ── */}
-        {/* TODO: replace hardcoded values with Clerk useUser() data */}
+        {/* ── Profile ── */}
         <SectionCard>
           <TouchableOpacity
             className="flex-row items-center gap-4 px-4 py-4"
@@ -232,7 +246,7 @@ export default function SettingsScreen() {
                 className="text-base font-semibold"
                 style={{ color: Colors.textOnDark }}
               >
-                AB
+                {initials}
               </Text>
             </View>
             <View className="gap-0.5">
@@ -240,10 +254,10 @@ export default function SettingsScreen() {
                 className="text-lg font-semibold"
                 style={{ color: Colors.textPrimary }}
               >
-                Alex Brown
+                {displayName}
               </Text>
               <Text className="text-sm" style={{ color: Colors.textMuted }}>
-                alex@example.com
+                {displayEmail}
               </Text>
             </View>
           </TouchableOpacity>

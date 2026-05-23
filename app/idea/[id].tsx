@@ -392,26 +392,6 @@ export default function IdeaDetailScreen() {
           </SectionCard>
         )}
 
-        <TouchableOpacity
-          onPress={() =>
-            router.push({
-              pathname: "/collection/[id]",
-              params: {
-                id: idea.collectionId || "", // Pass empty string if no collectionId to avoid undefined
-              },
-            })
-          }
-          className="flex-row items-center gap-1 rounded-[10px] px-3 py-1 border border-dashed"
-          style={{ borderColor: Colors.brandTeal }}
-        >
-          <Text
-            className="text-[13px] text-center font-medium"
-            style={{ color: Colors.brandTeal }}
-          >
-            Collection
-          </Text>
-        </TouchableOpacity>
-
         {/* Notes */}
         <SectionCard>
           <View className="flex-row justify-between items-center mb-3">

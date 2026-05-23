@@ -52,7 +52,7 @@ export default function TabsLayout() {
           position: "absolute",
           backgroundColor: colors.lightTeal,
           borderTopWidth: 2,
-          borderTopColor: "#E5E5E5",
+          borderTopColor: "#96f4e9",
           paddingTop: 5,
           paddingVertical: 10,
           elevation: 0,

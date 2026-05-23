@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useUser } from "@clerk/clerk-expo";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -178,6 +179,9 @@ export default function TheLotScreen() {
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
   const userId = useUserId();
 
+  const { user } = useUser();
+  const initial = user?.firstName?.[0]?.toUpperCase() ?? "?";
+
   // ── Convex query ──────────────────────────────────────────────────────────
   // undefined = loading, array = ready
   const ideas = useQuery(api.ideas.getIdeas, { userId: userId });
@@ -217,7 +221,7 @@ export default function TheLotScreen() {
             className="rounded-full w-10 h-10 items-center justify-center"
             style={{ backgroundColor: Colors.brandTeal }}
           >
-            <Text className="text-white text-base font-semibold">A</Text>
+            <Text className="text-white text-base font-semibold">{initial}</Text>
           </View>
         </View>
 
