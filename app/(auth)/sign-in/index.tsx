@@ -1,6 +1,6 @@
 import Colors from "@/constants/colors";
 import { useSignIn } from "@clerk/clerk-expo";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -72,14 +72,15 @@ export default function SignInScreen() {
           <View className="flex-1 pt-20 pb-8">
             {/* ── Brand block ── */}
             <View className="items-center mb-12">
+              {/* Icon */}
               <View
-                className="w-20 h-20 rounded-2xl items-center justify-center"
-                style={{ backgroundColor: Colors.primaryMid }}
+                className="rounded-full border-2 border-black w-20 h-20 p-2 flex items-center justify-center"
+                style={{ backgroundColor: Colors.brandTeal }}
               >
-                <Ionicons
+                <MaterialCommunityIcons
                   name="archive-outline"
-                  size={32}
-                  color={Colors.lightTeal}
+                  size={40}
+                  color="black"
                 />
               </View>
               <Text
@@ -218,31 +219,6 @@ export default function SignInScreen() {
                   Continue with Google
                 </Text>
               </TouchableOpacity>
-
-              {/* Apple */}
-              {/* <TouchableOpacity
-                className="flex-row items-center justify-center rounded-[14px] py-[13px] gap-3 border-[0.5px]"
-                style={{ borderColor: Colors.textOnDark }}
-                activeOpacity={0.8}
-                onPress={() =>
-                  Alert.alert(
-                    "Coming soon",
-                    "Apple sign-in will be available soon.",
-                  )
-                }
-              >
-                <Ionicons
-                  name="logo-apple"
-                  size={18}
-                  color={Colors.textOnDark}
-                />
-                <Text
-                  className="text-[15px]"
-                  style={{ color: Colors.textOnDark }}
-                >
-                  Continue with Apple
-                </Text>
-              </TouchableOpacity> */}
 
               {/* Toggle to sign up */}
               <TouchableOpacity
