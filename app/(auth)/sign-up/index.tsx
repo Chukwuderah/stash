@@ -1,6 +1,6 @@
 import Colors from "@/constants/colors";
 import { useSignUp } from "@clerk/clerk-expo";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -243,11 +243,16 @@ export default function SignUpScreen() {
           <View className="flex-1 pt-16 pb-8">
             {/* ── Brand block ── */}
             <View className="items-center mb-9">
+              {/* Icon */}
               <View
-                className="w-20 h-20 rounded-2xl items-center justify-center"
-                style={{ backgroundColor: Colors.primaryMid }}
+                className="rounded-full border-2 border-black w-20 h-20 p-2 flex items-center justify-center"
+                style={{ backgroundColor: Colors.brandTeal }}
               >
-                <Ionicons name="archive" size={32} color={Colors.lightTeal} />
+                <MaterialCommunityIcons
+                  name="archive-outline"
+                  size={40}
+                  color="black"
+                />
               </View>
               <Text
                 className="text-[36px] font-semibold mt-4"
