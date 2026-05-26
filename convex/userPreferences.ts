@@ -1,6 +1,14 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// ─── Auth helper ──────────────────────────────────────────────────────────────
+
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Unauthenticated");
+  return identity.subject as string;
+}
+
 // ─── Default preferences ──────────────────────────────────────────────────────
 
 const DEFAULTS = {
@@ -10,23 +18,24 @@ const DEFAULTS = {
   sortOrder: "Newest first" as const,
 };
 
-// getUserPreferences
+// ─── getUserPreferences ───────────────────────────────────────────────────────
 
 export const getUserPreferences = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx); // Securely get ID
+
     return await ctx.db
       .query("userPreferences")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
   },
 });
 
-// setUserPreferences
+// ─── setUserPreferences ───────────────────────────────────────────────────────
 
 export const setUserPreferences = mutation({
   args: {
-    userId: v.string(),
     dailyNudge: v.optional(v.boolean()),
     cadence: v.optional(
       v.union(
@@ -43,7 +52,8 @@ export const setUserPreferences = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const { userId, ...fields } = args;
+    const userId = await requireAuth(ctx); // Securely get ID
+    const fields = args; // Since userId isn't in args, we can use them directly
 
     const existing = await ctx.db
       .query("userPreferences")

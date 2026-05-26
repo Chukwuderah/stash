@@ -1,7 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useUserId } from "@/hooks/useUserId";
 import { tagSelection } from "@/utils/tagSelection";
 import { AntDesign } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -49,8 +48,7 @@ export default function QuickAddScreen() {
   const snapPoints = useMemo(() => ["85%", "92%"], []);
 
   // Convex
-  const userId = useUserId();
-  const tags = useQuery(api.tags.getTags, { userId });
+  const tags = useQuery(api.tags.getTags, {});
   const createIdea = useMutation(api.ideas.createIdea);
 
   useEffect(() => {
@@ -73,7 +71,6 @@ export default function QuickAddScreen() {
     try {
       await createIdea({
         text: text.trim(),
-        userId,
         tagIds: selectedTags,
       });
       router.back();

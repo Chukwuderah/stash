@@ -1,14 +1,24 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 
+// ─── Auth helper ──────────────────────────────────────────────────────────────
+
+async function requireAuth(ctx: any) {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) throw new Error("Unauthenticated");
+  return identity.subject as string;
+}
+
 // ─── getTags ──────────────────────────────────────────────────────────────────
 
 export const getTags = query({
-  args: { userId: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await requireAuth(ctx);
+
     const tags = await ctx.db
       .query("tags")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
     const tagsWithCount = await Promise.all(
@@ -31,7 +41,15 @@ export const getTags = query({
 export const getTagById = query({
   args: { tagId: v.id("tags") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.tagId);
+    const userId = await requireAuth(ctx);
+
+    const tag = await ctx.db.get(args.tagId);
+    if (!tag) return null;
+
+    // SECURITY: Ensure user owns this tag
+    if (tag.userId !== userId) throw new Error("Unauthorized");
+
+    return tag;
   },
 });
 
@@ -41,13 +59,14 @@ export const createTag = mutation({
   args: {
     name: v.string(),
     color: v.string(),
-    userId: v.string(),
   },
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
     return await ctx.db.insert("tags", {
       name: args.name,
       color: args.color,
-      userId: args.userId,
+      userId,
     });
   },
 });
@@ -61,7 +80,14 @@ export const updateTag = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
     const { tagId, ...fields } = args;
+
+    // SECURITY: Ensure user owns this tag before modifying
+    const tag = await ctx.db.get(tagId);
+    if (!tag) throw new Error("Tag not found");
+    if (tag.userId !== userId) throw new Error("Unauthorized");
+
     await ctx.db.patch(tagId, fields);
   },
 });
@@ -71,6 +97,13 @@ export const updateTag = mutation({
 export const deleteTag = mutation({
   args: { tagId: v.id("tags") },
   handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    // SECURITY: Ensure user owns this tag before deleting
+    const tag = await ctx.db.get(args.tagId);
+    if (!tag) throw new Error("Tag not found");
+    if (tag.userId !== userId) throw new Error("Unauthorized");
+
     const linkedIdeas = await ctx.db
       .query("ideaTags")
       .withIndex("by_tag", (q) => q.eq("tagId", args.tagId))

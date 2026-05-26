@@ -1,7 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useUserId } from "@/hooks/useUserId";
 import { tagSelection } from "@/utils/tagSelection";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -130,8 +129,7 @@ export default function TagPickerScreen() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Convex
-  const userId = useUserId();
-  const tags = useQuery(api.tags.getTags, { userId });
+  const tags = useQuery(api.tags.getTags, {});
   const createTag = useMutation(api.tags.createTag);
   const addTagToIdea = useMutation(api.ideaTags.addTagToIdea);
   const removeTagFromIdea = useMutation(api.ideaTags.removeTagFromIdea);
@@ -173,7 +171,6 @@ export default function TagPickerScreen() {
       const newTagId = await createTag({
         name: query.trim(),
         color,
-        userId,
       });
       setSelected((prev) => [...prev, newTagId]);
       setQuery("");

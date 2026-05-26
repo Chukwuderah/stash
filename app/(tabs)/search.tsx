@@ -1,6 +1,5 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -203,9 +202,7 @@ export default function SearchScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const userId = useUserId();
   const searchResults = useQuery(api.ideas.searchIdeas, {
-    userId,
     query: debouncedQuery,
   });
 

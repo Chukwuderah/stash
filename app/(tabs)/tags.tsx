@@ -1,7 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useUserId } from "@/hooks/useUserId";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -75,9 +74,8 @@ function TagRow({
 export default function TagsScreen() {
   const router = useRouter();
 
-
-  const userId = useUserId();
-  const tags = useQuery(api.tags.getTags, { userId });
+  // ── Convex
+  const tags = useQuery(api.tags.getTags, {});
   const deleteTag = useMutation(api.tags.deleteTag);
   const updateTag = useMutation(api.tags.updateTag);
 

@@ -1,6 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { useUserId } from "@/hooks/useUserId";
+import { useUser } from "@clerk/clerk-expo";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -15,7 +15,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useUser } from "@clerk/clerk-expo";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -177,14 +176,13 @@ function FilterChip({
 export default function TheLotScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
-  const userId = useUserId();
 
   const { user } = useUser();
   const initial = user?.firstName?.[0]?.toUpperCase() ?? "?";
 
   // ── Convex query ──────────────────────────────────────────────────────────
   // undefined = loading, array = ready
-  const ideas = useQuery(api.ideas.getIdeas, { userId: userId });
+  const ideas = useQuery(api.ideas.getIdeas, {});
 
   const filters: { label: string; value: Filter }[] = [
     { label: "All", value: "all" },
@@ -214,15 +212,20 @@ export default function TheLotScreen() {
               style={{ color: Colors.accentTeal }}
               className="text-lg font-medium"
             >
-              {ideas?.length ?? 0} idea{(ideas?.length ?? 0) > 1 ? "s" : ""} parked
+              {ideas?.length ?? 0} idea{(ideas?.length ?? 0) > 1 ? "s" : ""}{" "}
+              parked
             </Text>
           </View>
-          <View
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings")}
+            activeOpacity={0.8}
             className="rounded-full w-10 h-10 items-center justify-center"
             style={{ backgroundColor: Colors.brandTeal }}
           >
-            <Text className="text-white text-base font-semibold">{initial}</Text>
-          </View>
+            <Text className="text-white text-base font-semibold">
+              {initial}
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* ── Filter chips ── */}

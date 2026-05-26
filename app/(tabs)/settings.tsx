@@ -1,10 +1,8 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { useUserId } from "@/hooks/useUserId";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
-import { useRouter } from "expo-router";
 import {
   Alert,
   Linking,
@@ -113,15 +111,11 @@ function SettingsRow({
 // Main screen
 
 export default function SettingsScreen() {
-  const userId = useUserId();
-  const prefs = useQuery(api.userPreferences.getUserPreferences, {
-    userId,
-  });
+  const prefs = useQuery(api.userPreferences.getUserPreferences, {});
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 
   const { signOut } = useAuth();
   const { user } = useUser();
-  const router = useRouter();
 
   // Derived display values
   const displayName = user?.fullName ?? user?.firstName ?? "—";
@@ -144,15 +138,15 @@ export default function SettingsScreen() {
     Alert.alert("Cadence", "How often should we resurface an old idea?", [
       {
         text: "Daily",
-        onPress: () => setPrefs({ userId, cadence: "Daily" }),
+        onPress: () => setPrefs({ cadence: "Daily" }),
       },
       {
         text: "Every 2 days",
-        onPress: () => setPrefs({ userId, cadence: "Every 2 days" }),
+        onPress: () => setPrefs({ cadence: "Every 2 days" }),
       },
       {
         text: "Weekly",
-        onPress: () => setPrefs({ userId, cadence: "Weekly" }),
+        onPress: () => setPrefs({ cadence: "Weekly" }),
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -165,15 +159,15 @@ export default function SettingsScreen() {
       [
         {
           text: "30 days",
-          onPress: () => setPrefs({ userId, agingThreshold: "30 days" }),
+          onPress: () => setPrefs({ agingThreshold: "30 days" }),
         },
         {
           text: "60 days",
-          onPress: () => setPrefs({ userId, agingThreshold: "60 days" }),
+          onPress: () => setPrefs({ agingThreshold: "60 days" }),
         },
         {
           text: "90 days",
-          onPress: () => setPrefs({ userId, agingThreshold: "90 days" }),
+          onPress: () => setPrefs({ agingThreshold: "90 days" }),
         },
         { text: "Cancel", style: "cancel" },
       ],
@@ -184,11 +178,11 @@ export default function SettingsScreen() {
     Alert.alert("Default sort", "How should ideas be sorted in your feed?", [
       {
         text: "Newest first",
-        onPress: () => setPrefs({ userId, sortOrder: "Newest first" }),
+        onPress: () => setPrefs({ sortOrder: "Newest first" }),
       },
       {
         text: "Oldest first",
-        onPress: () => setPrefs({ userId, sortOrder: "Oldest first" }),
+        onPress: () => setPrefs({ sortOrder: "Oldest first" }),
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -284,7 +278,7 @@ export default function SettingsScreen() {
             <Switch
               value={dailyNudge}
               onValueChange={(value) => {
-                setPrefs({ userId, dailyNudge: value });
+                setPrefs({ dailyNudge: value });
               }}
               trackColor={{ false: Colors.cardBorder, true: Colors.brandTeal }}
               thumbColor="#FFFFFF"
