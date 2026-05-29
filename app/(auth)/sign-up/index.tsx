@@ -1,11 +1,12 @@
 import Colors from "@/constants/colors";
 import { useSignUp } from "@clerk/clerk-expo";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -244,16 +245,11 @@ export default function SignUpScreen() {
             {/* ── Brand block ── */}
             <View className="items-center mb-9">
               {/* Icon */}
-              <View
-                className="rounded-full border-2 border-black w-20 h-20 p-2 flex items-center justify-center"
-                style={{ backgroundColor: Colors.brandTeal }}
-              >
-                <MaterialCommunityIcons
-                  name="archive-outline"
-                  size={40}
-                  color="black"
-                />
-              </View>
+              <Image
+                source={require("@/assets/splash-logo-light.png")}
+                className="w-28 h-28"
+              />
+
               <Text
                 className="text-[36px] font-semibold mt-4"
                 style={{ color: Colors.textOnDark }}
