@@ -173,7 +173,7 @@ function EmptyState({ query }: { query: string }) {
             className="text-sm text-center leading-5"
             style={{ color: Colors.textMuted }}
           >
-            Nothing matched "{query}" — try a different search
+            Nothing matched &quot;{query}&quot; — try a different search
           </Text>
         </>
       ) : (

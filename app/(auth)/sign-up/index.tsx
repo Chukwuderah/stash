@@ -196,7 +196,7 @@ export default function SignUpScreen() {
                   className="text-[14px]"
                   style={{ color: Colors.accentTeal }}
                 >
-                  Didn't get it?{" "}
+                  Didn&apos;t get it?{" "}
                   <Text
                     className="font-semibold"
                     style={{ color: Colors.textOnDark }}

@@ -226,7 +226,7 @@ export default function SignInScreen() {
                   className="text-[14px]"
                   style={{ color: Colors.accentTeal }}
                 >
-                  Don't have an account?{" "}
+                  Don&apos;t have an account?{" "}
                   <Text
                     className="font-semibold"
                     style={{ color: Colors.textOnDark }}

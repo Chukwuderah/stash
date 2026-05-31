@@ -76,7 +76,7 @@ function CreateTagRow({
     >
       <Ionicons name="add-circle-outline" size={18} color={Colors.brandTeal} />
       <Text className="ml-3 text-[15px]" style={{ color: Colors.brandTeal }}>
-        Create <Text className="font-semibold">"{query}"</Text> as a new tag
+        Create <Text className="font-semibold">&apos;{query}&apos;</Text> as a new tag
       </Text>
     </TouchableOpacity>
   );

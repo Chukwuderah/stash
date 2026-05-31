@@ -240,7 +240,7 @@ export default function TagsScreen() {
                   className="text-[14px] text-center leading-5 px-10"
                   style={{ color: Colors.textMuted }}
                 >
-                  Tap "New tag" or add tags while creating an idea
+                  Tap &quot;New tag&quot; or add tags while creating an idea
                 </Text>
               </View>
             }
