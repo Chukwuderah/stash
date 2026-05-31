@@ -304,7 +304,7 @@ export default function TagFilteredScreen() {
                   className="text-[14px] text-center leading-5"
                   style={{ color: Colors.textMuted }}
                 >
-                  Ideas tagged #{tag?.name} with status "{statusFilter}" will
+                  Ideas tagged #{tag?.name} with status &quot;{statusFilter}&quot; will
                   appear here
                 </Text>
               </View>
