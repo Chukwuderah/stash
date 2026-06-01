@@ -123,7 +123,7 @@ export default function TagPickerScreen() {
     } catch {
       return [];
     }
-  }, []);
+  }, [params.selected]);
 
   const [query, setQuery] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -198,10 +198,10 @@ export default function TagPickerScreen() {
     router.back();
   }
 
-  function handleClose() {
+  const handleClose = useCallback(() => {
     bottomSheetRef.current?.close();
     router.back();
-  }
+  }, [router]);
 
   function handleSheetChange(index: number) {
     if (index === -1) router.back();
@@ -217,7 +217,7 @@ export default function TagPickerScreen() {
         onPress={handleClose}
       />
     ),
-    [],
+    [handleClose],
   );
 
   return (

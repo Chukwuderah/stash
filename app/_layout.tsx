@@ -1,10 +1,12 @@
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
+import * as Notifications from "expo-notifications";
+import { Stack, useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import "react-native-gesture-handler";
+import { useEffect, useRef } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "react-native-reanimated";
 import "./global.css";
@@ -27,6 +29,35 @@ const tokenCache = {
   },
 };
 
+function NotificationHandler() {
+  const router = useRouter();
+  const responseListener = useRef<Notifications.EventSubscription | null>(null);
+
+  // Register for push notifications and save token to Convex
+  usePushNotifications();
+
+  useEffect(() => {
+    // Fires when the user taps a notification (app in background or closed)
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        const ideaId = response.notification.request.content.data?.ideaId;
+
+        if (typeof ideaId === "string" || typeof ideaId === "number") {
+          router.push({
+            pathname: "/idea/[id]",
+            params: { id: ideaId },
+          });
+        }
+      });
+
+    return () => {
+      responseListener.current?.remove();
+    };
+  }, [router]);
+
+  return null;
+}
+
 export default function RootLayout() {
   return (
     <ClerkProvider
@@ -35,6 +66,7 @@ export default function RootLayout() {
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <GestureHandlerRootView style={{ flex: 1 }}>
+          <NotificationHandler />
           <Stack>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

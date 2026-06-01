@@ -80,10 +80,10 @@ export default function QuickAddScreen() {
     }
   }
 
-  function handleClose() {
+  const handleClose = useCallback(() => {
     bottomSheetRef.current?.close();
     router.back();
-  }
+  }, [router]);
 
   function handleSheetChange(index: number) {
     if (index === -1) router.back();
@@ -99,7 +99,7 @@ export default function QuickAddScreen() {
         onPress={handleClose}
       />
     ),
-    [],
+    [handleClose],
   );
 
   const canSubmit = text.trim().length > 0 && !isSubmitting;
