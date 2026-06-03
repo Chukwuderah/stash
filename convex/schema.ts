@@ -67,5 +67,7 @@ export default defineSchema({
       v.literal("90 days"),
     ),
     sortOrder: v.union(v.literal("Newest first"), v.literal("Oldest first")),
+    // Expo push token — stored when the user grants notification permission
+    pushToken: v.optional(v.string()),
   }).index("by_user", ["userId"]),
 });

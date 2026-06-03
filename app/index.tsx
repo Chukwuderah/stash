@@ -3,7 +3,13 @@ import { useAuth } from "@clerk/clerk-expo";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useEffect } from "react";
-import { ActivityIndicator, ImageBackground, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ImageBackground,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -50,7 +56,10 @@ export default function Index() {
       >
         <SafeAreaView className="p-6 flex flex-col justify-end flex-1 gap-3">
           <Animated.View
-            entering={FadeInDown.delay(300).mass(0.5).stiffness(80).springify(20)}
+            entering={FadeInDown.delay(300)
+              .mass(0.5)
+              .stiffness(80)
+              .springify(20)}
           >
             <Text className="text-4xl text-white font-extrabold">
               Welcome to Stash
@@ -64,7 +73,10 @@ export default function Index() {
           </Animated.View>
 
           <Animated.View
-            entering={FadeInDown.delay(500).mass(0.5).stiffness(80).springify(20)}
+            entering={FadeInDown.delay(500)
+              .mass(0.5)
+              .stiffness(80)
+              .springify(20)}
           >
             <TouchableOpacity
               activeOpacity={0.7}
@@ -74,7 +86,7 @@ export default function Index() {
               <Text className="text-2xl font-semibold">Get Started</Text>
             </TouchableOpacity>
 
-            {/* <TouchableOpacity
+            <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => router.push("/(auth)/sign-in")}
               className="mt-3 w-full rounded-xl min-h-[52px] flex items-center justify-center"
@@ -84,11 +96,14 @@ export default function Index() {
                 style={{ color: colors.accentTeal }}
               >
                 Already have an account?{" "}
-                <Text className="font-bold" style={{ color: colors.textOnDark }}>
+                <Text
+                  className="font-bold"
+                  style={{ color: colors.textOnDark }}
+                >
                   Sign in
                 </Text>
               </Text>
-            </TouchableOpacity> */}
+            </TouchableOpacity>
           </Animated.View>
         </SafeAreaView>
       </LinearGradient>

@@ -50,6 +50,7 @@ export const setUserPreferences = mutation({
     sortOrder: v.optional(
       v.union(v.literal("Newest first"), v.literal("Oldest first")),
     ),
+    pushToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await requireAuth(ctx); // Securely get ID
@@ -71,6 +72,36 @@ export const setUserPreferences = mutation({
         cadence: fields.cadence ?? DEFAULTS.cadence,
         agingThreshold: fields.agingThreshold ?? DEFAULTS.agingThreshold,
         sortOrder: fields.sortOrder ?? DEFAULTS.sortOrder,
+        pushToken: fields.pushToken,
+      });
+    }
+  },
+});
+
+// ─── updatePushToken ──────────────────────────────────────────────────────────
+
+export const updatePushToken = mutation({
+  args: { pushToken: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await requireAuth(ctx);
+
+    const existing = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .unique();
+
+    if (existing) {
+      // Update existing preferences with the new token
+      await ctx.db.patch(existing._id, { pushToken: args.pushToken });
+    } else {
+      // Fall back to creating preferences if they don't exist yet
+      await ctx.db.insert("userPreferences", {
+        userId,
+        pushToken: args.pushToken,
+        dailyNudge: DEFAULTS.dailyNudge,
+        cadence: DEFAULTS.cadence,
+        agingThreshold: DEFAULTS.agingThreshold,
+        sortOrder: DEFAULTS.sortOrder,
       });
     }
   },

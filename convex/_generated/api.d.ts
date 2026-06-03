@@ -9,9 +9,11 @@
  */
 
 import type * as collections from "../collections.js";
+import type * as crons from "../crons.js";
 import type * as ideaTags from "../ideaTags.js";
 import type * as ideas from "../ideas.js";
 import type * as notes from "../notes.js";
+import type * as notifications from "../notifications.js";
 import type * as tags from "../tags.js";
 import type * as userPreferences from "../userPreferences.js";
 
@@ -23,9 +25,11 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   collections: typeof collections;
+  crons: typeof crons;
   ideaTags: typeof ideaTags;
   ideas: typeof ideas;
   notes: typeof notes;
+  notifications: typeof notifications;
   tags: typeof tags;
   userPreferences: typeof userPreferences;
 }>;
