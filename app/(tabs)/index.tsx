@@ -1,6 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/clerk-expo";
+import { useUser, useAuth } from "@clerk/clerk-expo";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -176,13 +176,17 @@ function FilterChip({
 export default function TheLotScreen() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Filter>("all");
+  const { isSignedIn, isLoaded } = useAuth();
 
   const { user } = useUser();
   const initial = user?.firstName?.[0]?.toUpperCase() ?? "?";
 
   // ── Convex query ──────────────────────────────────────────────────────────
   // undefined = loading, array = ready
-  const ideas = useQuery(api.ideas.getIdeas, {});
+  const ideas = useQuery(
+    api.ideas.getIdeas,
+    !isLoaded || !isSignedIn ? "skip" : {},
+  );
 
   const filters: { label: string; value: Filter }[] = [
     { label: "All", value: "all" },

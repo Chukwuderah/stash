@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -82,13 +83,17 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 
 export default function IdeaDetailScreen() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const ideaId = id as Id<"ideas">;
 
   const [newNote, setNewNote] = useState("");
 
   // Convex
-  const idea = useQuery(api.ideas.getIdeaById, { ideaId });
+  const idea = useQuery(
+    api.ideas.getIdeaById,
+    !isLoaded || !isSignedIn ? "skip" : { ideaId },
+  );
   const updateIdea = useMutation(api.ideas.updateIdea);
   const addNote = useMutation(api.notes.addNote);
 

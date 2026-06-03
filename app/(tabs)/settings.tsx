@@ -111,7 +111,11 @@ function SettingsRow({
 // Main screen
 
 export default function SettingsScreen() {
-  const prefs = useQuery(api.userPreferences.getUserPreferences, {});
+  const { isSignedIn, isLoaded } = useAuth();
+  const prefs = useQuery(
+    api.userPreferences.getUserPreferences,
+    !isLoaded || !isSignedIn ? "skip" : {},
+  );
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 
   const { signOut } = useAuth();

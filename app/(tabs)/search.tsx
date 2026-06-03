@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -193,6 +194,7 @@ function EmptyState({ query }: { query: string }) {
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const { isSignedIn, isLoaded } = useAuth();
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
@@ -202,9 +204,10 @@ export default function SearchScreen() {
     return () => clearTimeout(timer);
   }, [query]);
 
-  const searchResults = useQuery(api.ideas.searchIdeas, {
-    query: debouncedQuery,
-  });
+  const searchResults = useQuery(
+    api.ideas.searchIdeas,
+    !isLoaded || !isSignedIn ? "skip" : { query: debouncedQuery },
+  );
 
   //  ── Client-side status filter on search results
   const results = useMemo(() => {

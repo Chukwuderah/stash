@@ -2,6 +2,7 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { tagSelection } from "@/utils/tagSelection";
+import { useAuth } from "@clerk/clerk-expo";
 import { AntDesign } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
@@ -28,6 +29,7 @@ const MAX_CHARS = 280;
 
 export default function QuickAddScreen() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const bottomSheetRef = useRef<BottomSheet>(null);
   const inputRef = useRef<TextInput>(null);
 
@@ -48,7 +50,10 @@ export default function QuickAddScreen() {
   const snapPoints = useMemo(() => ["85%", "92%"], []);
 
   // Convex
-  const tags = useQuery(api.tags.getTags, {});
+  const tags = useQuery(
+    api.tags.getTags,
+    !isLoaded || !isSignedIn ? "skip" : {},
+  );
   const createIdea = useMutation(api.ideas.createIdea);
 
   useEffect(() => {

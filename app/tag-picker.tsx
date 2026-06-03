@@ -2,6 +2,7 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { tagSelection } from "@/utils/tagSelection";
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
@@ -76,7 +77,8 @@ function CreateTagRow({
     >
       <Ionicons name="add-circle-outline" size={18} color={Colors.brandTeal} />
       <Text className="ml-3 text-[15px]" style={{ color: Colors.brandTeal }}>
-        Create <Text className="font-semibold">&apos;{query}&apos;</Text> as a new tag
+        Create <Text className="font-semibold">&apos;{query}&apos;</Text> as a
+        new tag
       </Text>
     </TouchableOpacity>
   );
@@ -99,6 +101,7 @@ const TAG_COLORS = [
 
 export default function TagPickerScreen() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const params = useLocalSearchParams<{ selected?: string; ideaId?: string }>();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -129,7 +132,10 @@ export default function TagPickerScreen() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Convex
-  const tags = useQuery(api.tags.getTags, {});
+  const tags = useQuery(
+    api.tags.getTags,
+    !isLoaded || !isSignedIn ? "skip" : {},
+  );
   const createTag = useMutation(api.tags.createTag);
   const addTagToIdea = useMutation(api.ideaTags.addTagToIdea);
   const removeTagFromIdea = useMutation(api.ideaTags.removeTagFromIdea);

@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -158,13 +159,20 @@ function StatusChip({
 
 export default function TagFilteredScreen() {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tagId = id as Id<"tags">;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
 
   // ── Convex
-  const tag = useQuery(api.tags.getTagById, { tagId });
-  const allIdeas = useQuery(api.ideas.getIdeasByTag, { tagId });
+  const tag = useQuery(
+    api.tags.getTagById,
+    !isLoaded || !isSignedIn ? "skip" : { tagId },
+  );
+  const allIdeas = useQuery(
+    api.ideas.getIdeasByTag,
+    !isLoaded || !isSignedIn ? "skip" : { tagId },
+  );
 
   const isLoading = tag === undefined || allIdeas === undefined;
 
@@ -304,8 +312,8 @@ export default function TagFilteredScreen() {
                   className="text-[14px] text-center leading-5"
                   style={{ color: Colors.textMuted }}
                 >
-                  Ideas tagged #{tag?.name} with status &quot;{statusFilter}&quot; will
-                  appear here
+                  Ideas tagged #{tag?.name} with status &quot;{statusFilter}
+                  &quot; will appear here
                 </Text>
               </View>
             }
