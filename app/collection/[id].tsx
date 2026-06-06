@@ -1,9 +1,8 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -173,7 +172,7 @@ function FilterChip({
 
 export default function CollectionScreen() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const collectionId = id as Id<"collections">;
 
@@ -182,11 +181,11 @@ export default function CollectionScreen() {
   // Convex
   const collection = useQuery(
     api.collections.getCollectionById,
-    !isLoaded || !isSignedIn ? "skip" : { collectionId },
+    !isAuthenticated ? "skip" : { collectionId },
   );
   const ideas = useQuery(
     api.collections.getIdeasByCollection,
-    !isLoaded || !isSignedIn ? "skip" : { collectionId },
+    !isAuthenticated ? "skip" : { collectionId },
   );
   const deleteCollection = useMutation(api.collections.deleteCollection);
   const updateCollection = useMutation(api.collections.updateCollection);

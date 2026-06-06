@@ -2,7 +2,7 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import {
   Alert,
   Linking,
@@ -111,10 +111,10 @@ function SettingsRow({
 // Main screen
 
 export default function SettingsScreen() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const prefs = useQuery(
     api.userPreferences.getUserPreferences,
-    !isLoaded || !isSignedIn ? "skip" : {},
+    !isAuthenticated ? "skip" : {},
   );
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 

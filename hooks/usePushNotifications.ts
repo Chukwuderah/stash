@@ -1,5 +1,5 @@
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@clerk/clerk-expo";
+import { useConvexAuth } from "convex/react";
 import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
@@ -28,18 +28,20 @@ Notifications.setNotificationHandler({
 // Requests permission, gets the Expo push token, saves it to Convex.
 
 export function usePushNotifications() {
-  const { isSignedIn } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const setPrefs = useMutation(api.userPreferences.setUserPreferences);
 
   useEffect(() => {
-    if (!isSignedIn) return;
+    if (!isAuthenticated) return;
 
     registerForPushNotifications().then((token) => {
       if (token) {
+        console.log("Here is the Expo Push Token:", token);
+
         setPrefs({ pushToken: token }).catch(console.error);
       }
     });
-  }, [isSignedIn]);
+  }, [isAuthenticated]);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

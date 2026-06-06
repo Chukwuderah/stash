@@ -1,9 +1,8 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -159,7 +158,7 @@ function StatusChip({
 
 export default function TagFilteredScreen() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const tagId = id as Id<"tags">;
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("active");
@@ -167,11 +166,11 @@ export default function TagFilteredScreen() {
   // ── Convex
   const tag = useQuery(
     api.tags.getTagById,
-    !isLoaded || !isSignedIn ? "skip" : { tagId },
+    !isAuthenticated ? "skip" : { tagId },
   );
   const allIdeas = useQuery(
     api.ideas.getIdeasByTag,
-    !isLoaded || !isSignedIn ? "skip" : { tagId },
+    !isAuthenticated ? "skip" : { tagId },
   );
 
   const isLoading = tag === undefined || allIdeas === undefined;

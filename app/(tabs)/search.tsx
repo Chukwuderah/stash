@@ -1,8 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useQuery } from "convex/react";
+import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -194,7 +193,7 @@ function EmptyState({ query }: { query: string }) {
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
@@ -206,7 +205,7 @@ export default function SearchScreen() {
 
   const searchResults = useQuery(
     api.ideas.searchIdeas,
-    !isLoaded || !isSignedIn ? "skip" : { query: debouncedQuery },
+    !isAuthenticated ? "skip" : { query: debouncedQuery },
   );
 
   //  ── Client-side status filter on search results

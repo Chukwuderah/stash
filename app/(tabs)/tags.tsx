@@ -1,9 +1,8 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -74,13 +73,10 @@ function TagRow({
 
 export default function TagsScreen() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
 
   // ── Convex
-  const tags = useQuery(
-    api.tags.getTags,
-    !isLoaded || !isSignedIn ? "skip" : {},
-  );
+  const tags = useQuery(api.tags.getTags, !isAuthenticated ? "skip" : {});
   const deleteTag = useMutation(api.tags.deleteTag);
   const updateTag = useMutation(api.tags.updateTag);
 

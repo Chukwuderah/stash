@@ -2,7 +2,6 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { tagSelection } from "@/utils/tagSelection";
-import { useAuth } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
@@ -10,7 +9,7 @@ import BottomSheet, {
   BottomSheetFlatList,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
-import { useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -101,7 +100,7 @@ const TAG_COLORS = [
 
 export default function TagPickerScreen() {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useAuth();
+  const { isAuthenticated } = useConvexAuth();
   const params = useLocalSearchParams<{ selected?: string; ideaId?: string }>();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -132,10 +131,7 @@ export default function TagPickerScreen() {
   const [isCreating, setIsCreating] = useState(false);
 
   // Convex
-  const tags = useQuery(
-    api.tags.getTags,
-    !isLoaded || !isSignedIn ? "skip" : {},
-  );
+  const tags = useQuery(api.tags.getTags, !isAuthenticated ? "skip" : {});
   const createTag = useMutation(api.tags.createTag);
   const addTagToIdea = useMutation(api.ideaTags.addTagToIdea);
   const removeTagFromIdea = useMutation(api.ideaTags.removeTagFromIdea);
