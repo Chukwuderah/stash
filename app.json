@@ -4,7 +4,7 @@
     "slug": "Stash",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/app-icon.png",
+    "icon": "./assets/stash-icon.png",
     "scheme": "stash",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,12 +14,13 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#042F2E",
-        "foregroundImage": "./assets/app-icon.png",
-        "monochromeImage": "./assets/app-icon.png"
+        "foregroundImage": "./assets/stash-icon.png",
+        "monochromeImage": "./assets/stash-icon.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.stash"
+      "package": "com.suavis.stash",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "output": "static",
@@ -51,6 +52,6 @@
         "projectId": "ef97e1c9-f48e-4c29-9f9a-1d06ba0009e9"
       }
     },
-    "owner": "suavis_dev"
+    "owner": "suavisthedev"
   }
 }
