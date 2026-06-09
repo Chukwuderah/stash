@@ -15,7 +15,6 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     // Newer NotificationBehavior includes banner/list flags on some platforms
     // Provide all fields to satisfy the type.
-    shouldShowAlert: true,
     shouldShowBanner: true,
     shouldShowList: true,
     shouldPlaySound: true,
