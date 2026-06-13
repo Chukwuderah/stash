@@ -14,7 +14,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  StatusBar,
   Text,
   TextInput,
   TouchableOpacity,
@@ -154,8 +153,9 @@ export default function TagPickerScreen() {
 
   const showCreate =
     query.trim().length > 0 &&
-    tags !== undefined &&
-    !tags.some((t) => t.name.toLowerCase() === query.trim().toLowerCase());
+    !(tags ?? []).some(
+      (t) => t.name.toLowerCase() === query.trim().toLowerCase(),
+    );
 
   // Handlers
 
@@ -222,10 +222,10 @@ export default function TagPickerScreen() {
     [handleClose],
   );
 
+  const isLoading = isAuthenticated && tags === undefined;
+
   return (
     <View className="flex-1">
-      <StatusBar barStyle="light-content" />
-
       <BottomSheet
         ref={bottomSheetRef}
         index={0}
@@ -306,44 +306,45 @@ export default function TagPickerScreen() {
           </View>
 
           {/* Tag list */}
-          {tags === undefined ? (
+          {isLoading ? (
             <View className="flex-1 items-center justify-center">
               <ActivityIndicator size="large" color={Colors.brandTeal} />
             </View>
           ) : (
-            <BottomSheetFlatList
-              data={filteredTags}
-              keyExtractor={(item) => item._id}
-              renderItem={({ item }) => (
-                <TagRow
-                  name={item.name}
-                  color={item.color}
-                  selected={selected.includes(item._id)}
-                  onToggle={() => toggleTag(item._id)}
-                />
+            <>
+              {showCreate && (
+                <CreateTagRow query={query} onCreate={handleCreateTag} />
               )}
-              keyboardShouldPersistTaps="handled"
-              contentContainerStyle={{ paddingBottom: 40 }}
-              ListHeaderComponent={
-                showCreate ? (
-                  <CreateTagRow query={query} onCreate={handleCreateTag} />
-                ) : null
-              }
-              ListEmptyComponent={
-                !showCreate ? (
-                  <View className="items-center pt-10 gap-2">
-                    <Text
-                      className="text-[14px]"
-                      style={{ color: Colors.textMuted }}
-                    >
-                      {query
-                        ? `No tags match "${query}"`
-                        : "No tags yet — type to create one"}
-                    </Text>
-                  </View>
-                ) : null
-              }
-            />
+
+              <BottomSheetFlatList
+                data={filteredTags}
+                keyExtractor={(item) => item._id}
+                renderItem={({ item }) => (
+                  <TagRow
+                    name={item.name}
+                    color={item.color}
+                    selected={selected.includes(item._id)}
+                    onToggle={() => toggleTag(item._id)}
+                  />
+                )}
+                keyboardShouldPersistTaps="handled"
+                contentContainerStyle={{ paddingBottom: 40 }}
+                ListEmptyComponent={
+                  !showCreate ? (
+                    <View className="items-center pt-10 gap-2">
+                      <Text
+                        className="text-[14px]"
+                        style={{ color: Colors.textMuted }}
+                      >
+                        {query
+                          ? `No tags match "${query}"`
+                          : "No tags yet — type to create one"}
+                      </Text>
+                    </View>
+                  ) : null
+                }
+              />
+            </>
           )}
         </BottomSheetView>
       </BottomSheet>

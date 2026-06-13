@@ -104,6 +104,7 @@ export default function QuickAddScreen() {
   );
 
   const canSubmit = text.trim().length > 0 && !isSubmitting;
+  const isLoading = isAuthenticated && tags === undefined;
 
   return (
     <View className="flex-1">
@@ -187,7 +188,7 @@ export default function QuickAddScreen() {
                 alignItems: "center",
               }}
             >
-              {tags === undefined && (
+              {isLoading && (
                 <ActivityIndicator size="small" color={Colors.brandTeal} />
               )}
 
