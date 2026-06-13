@@ -5,7 +5,7 @@ const crons = cronJobs();
 
 crons.daily(
   "daily idea resurface",
-  { hourUTC: 9, minuteUTC: 0 }, // Adjust to your preferred time
+  { hourUTC: 9, minuteUTC: 0 }, // Adjust to preferred time
   internal.notifications.resurface,
 );
 
