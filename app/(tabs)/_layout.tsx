@@ -4,7 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { Redirect, Tabs } from "expo-router";
 import React from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Image, View } from "react-native";
 
 export default function TabsLayout() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -14,9 +14,9 @@ export default function TabsLayout() {
     return (
       <View
         className="flex-1 items-center justify-center"
-        style={{ backgroundColor: colors.primaryDark }}
+        style={{ backgroundColor: colors.brandTeal }}
       >
-        <ActivityIndicator size="large" color={colors.brandTeal} />
+        <ActivityIndicator size="large" color={colors.primaryDark} />
       </View>
     );
   }
@@ -72,12 +72,15 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarLabel: "The Lot",
-          tabBarIcon: ({ color, focused, size }) => (
+          tabBarIcon: ({ color, focused }) => (
             <ActiveTabBar focused={focused}>
-              <MaterialCommunityIcons
-                name={focused ? "archive" : "archive-outline"}
-                size={size}
-                color={color}
+              <Image
+                source={require("@/assets/notification-icon.png")}
+                style={{
+                  width: 50,
+                  height: 50,
+                  tintColor: color,
+                }}
               />
             </ActiveTabBar>
           ),
