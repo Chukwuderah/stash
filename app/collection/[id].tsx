@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { EmptyCollection } from "@/shared/EmptyStates";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -372,27 +373,7 @@ export default function CollectionScreen() {
           )}
           contentContainerStyle={{ paddingTop: 14, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
-            <View className="items-center pt-20 px-10 gap-2">
-              <Ionicons
-                name="folder-open-outline"
-                size={40}
-                color={Colors.cardBorder}
-              />
-              <Text
-                className="text-[16px] font-medium"
-                style={{ color: Colors.textSubtle }}
-              >
-                No ideas here yet
-              </Text>
-              <Text
-                className="text-[14px] text-center leading-5"
-                style={{ color: Colors.textMuted }}
-              >
-                Add ideas to this collection from the Idea Detail screen
-              </Text>
-            </View>
-          }
+          ListEmptyComponent={<EmptyCollection />}
         />
       </View>
 

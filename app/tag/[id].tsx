@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { EmptyTagIdeas } from "@/shared/EmptyStates";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -295,26 +296,7 @@ export default function TagFilteredScreen() {
             contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <View className="items-center pt-20 px-10 gap-3">
-                <Ionicons
-                  name="pricetag-outline"
-                  size={40}
-                  color={Colors.cardBorder}
-                />
-                <Text
-                  className="text-[16px] font-medium"
-                  style={{ color: Colors.textSubtle }}
-                >
-                  No {statusFilter} ideas
-                </Text>
-                <Text
-                  className="text-[14px] text-center leading-5"
-                  style={{ color: Colors.textMuted }}
-                >
-                  Ideas tagged #{tag?.name} with status &quot;{statusFilter}
-                  &quot; will appear here
-                </Text>
-              </View>
+              <EmptyTagIdeas tagName={tag?.name ?? ""} status={statusFilter} />
             }
           />
         )}

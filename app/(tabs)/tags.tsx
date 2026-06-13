@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { EmptyTags } from "@/shared/EmptyStates";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -153,6 +154,8 @@ export default function TagsScreen() {
     });
   }
 
+  const isLoading = isAuthenticated && tags === undefined;
+
   return (
     <View className="flex-1">
       <SafeAreaView style={{ backgroundColor: Colors.primaryDark }}>
@@ -203,15 +206,9 @@ export default function TagsScreen() {
           </Text>
         </TouchableOpacity>
 
-        {/* Loading */}
-        {tags === undefined && (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={Colors.brandTeal} />
-          </View>
-        )}
-
-        {/* Tag list */}
-        {tags !== undefined && (
+        {isLoading ? (
+          <ActivityIndicator size="large" color={Colors.brandTeal} />
+        ) : (
           <FlatList
             data={tags}
             keyExtractor={(item) => item._id}
@@ -224,27 +221,7 @@ export default function TagsScreen() {
             )}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 100 }}
-            ListEmptyComponent={
-              <View className="items-center pt-20 gap-3">
-                <Ionicons
-                  name="pricetag-outline"
-                  size={40}
-                  color={Colors.cardBorder}
-                />
-                <Text
-                  className="text-[16px] font-medium"
-                  style={{ color: Colors.textSubtle }}
-                >
-                  No tags yet
-                </Text>
-                <Text
-                  className="text-[14px] text-center leading-5 px-10"
-                  style={{ color: Colors.textMuted }}
-                >
-                  Tap &quot;New tag&quot; or add tags while creating an idea
-                </Text>
-              </View>
-            }
+            ListEmptyComponent={<EmptyTags />}
           />
         )}
       </View>

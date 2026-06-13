@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { EmptyFilteredLot, EmptyLot } from "@/shared/EmptyStates";
 import { useUser } from "@clerk/clerk-expo";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -199,6 +200,8 @@ export default function TheLotScreen() {
       return idea.priority === activeFilter;
     }) ?? [];
 
+  const isLoading = isAuthenticated && ideas === undefined;
+
   return (
     <View className="flex-1">
       <SafeAreaView
@@ -251,15 +254,9 @@ export default function TheLotScreen() {
 
       {/* ── Body ── */}
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
-        {/* Loading */}
-        {ideas === undefined && (
-          <View className="flex-1 items-center justify-center">
-            <ActivityIndicator size="large" color={Colors.brandTeal} />
-          </View>
-        )}
-
-        {/* Loaded */}
-        {ideas !== undefined && (
+        {isLoading ? (
+          <ActivityIndicator size="large" color={Colors.brandTeal} />
+        ) : (
           <FlatList
             data={filteredIdeas}
             keyExtractor={(item) => item._id}
@@ -277,19 +274,12 @@ export default function TheLotScreen() {
             contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              <View className="items-center pt-20 px-10 gap-2">
-                <Text
-                  className="text-[16px] font-medium"
-                  style={{ color: Colors.textSubtle }}
-                >
-                  Nothing parked yet
-                </Text>
-                <Text
-                  className="text-[14px] text-center leading-5"
-                  style={{ color: Colors.textMuted }}
-                >
-                  Tap the + button to stash your first idea
-                </Text>
+              <View className="flex-1 justify-center items-center gap-3">
+                {activeFilter === "all" ? (
+                  <EmptyLot />
+                ) : (
+                  <EmptyFilteredLot filter={activeFilter} />
+                )}
               </View>
             }
           />

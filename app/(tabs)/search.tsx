@@ -1,5 +1,6 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
+import { EmptySearchPrompt, EmptySearchResults } from "@/shared/EmptyStates";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -157,37 +158,6 @@ function StatusChip({
   );
 }
 
-function EmptyState({ query }: { query: string }) {
-  return (
-    <View className="items-center pt-20 px-10 gap-3">
-      <Ionicons name="search-outline" size={40} color={Colors.cardBorder} />
-      {query.length > 0 ? (
-        <>
-          <Text
-            className="text-base font-medium"
-            style={{ color: Colors.textSubtle }}
-          >
-            No ideas found
-          </Text>
-          <Text
-            className="text-sm text-center leading-5"
-            style={{ color: Colors.textMuted }}
-          >
-            Nothing matched &quot;{query}&quot; — try a different search
-          </Text>
-        </>
-      ) : (
-        <Text
-          className="text-sm text-center leading-5"
-          style={{ color: Colors.textMuted }}
-        >
-          Start typing to search your stash
-        </Text>
-      )}
-    </View>
-  );
-}
-
 // Main screen
 
 export default function SearchScreen() {
@@ -305,7 +275,13 @@ export default function SearchScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          ListEmptyComponent={<EmptyState query={debouncedQuery} />}
+          ListEmptyComponent={() =>
+            query.trim().length === 0 ? (
+              <EmptySearchPrompt />
+            ) : (
+              <EmptySearchResults query={query} />
+            )
+          }
         />
       </View>
     </View>
