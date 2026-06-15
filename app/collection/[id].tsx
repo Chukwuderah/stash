@@ -2,10 +2,11 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { EmptyCollection } from "@/shared/EmptyStates";
+import RenameSheet, { type RenameSheetRef } from "@/shared/rename-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -173,6 +174,7 @@ function FilterChip({
 
 export default function CollectionScreen() {
   const router = useRouter();
+  const renameSheetRef = useRef<RenameSheetRef>(null);
   const { isAuthenticated } = useConvexAuth();
   const { id } = useLocalSearchParams<{ id: string }>();
   const collectionId = id as Id<"collections">;
@@ -191,7 +193,8 @@ export default function CollectionScreen() {
   const deleteCollection = useMutation(api.collections.deleteCollection);
   const updateCollection = useMutation(api.collections.updateCollection);
 
-  const isLoading = collection === undefined || ideas === undefined;
+  const isLoading =
+    (isAuthenticated && collection === undefined) || ideas === undefined;
 
   // Client-side priority filter
   const filteredIdeas =
@@ -239,28 +242,7 @@ export default function CollectionScreen() {
   }
 
   function handleRename() {
-    if (Platform.OS === "ios") {
-      Alert.prompt(
-        "Rename collection",
-        `Current name: ${collection!.name}`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Save",
-            onPress: (newName: string | undefined) => {
-              if (newName?.trim() && newName.trim() !== collection!.name) {
-                updateCollection({ collectionId, name: newName.trim() });
-              }
-            },
-          },
-        ],
-        "plain-text",
-        collection!.name,
-      );
-    } else {
-      // Android — TODO: build a rename bottom sheet
-      console.log("Rename not yet supported on Android — build rename sheet");
-    }
+    renameSheetRef.current?.open();
   }
 
   function confirmDelete() {
@@ -376,6 +358,14 @@ export default function CollectionScreen() {
           ListEmptyComponent={<EmptyCollection />}
         />
       </View>
+      <RenameSheet
+        ref={renameSheetRef}
+        title="Rename collection"
+        currentName={collection?.name ?? ""}
+        onConfirm={(newName) => {
+          updateCollection({ collectionId, name: newName });
+        }}
+      />
 
       {/* ── FAB ── */}
       <TouchableOpacity

@@ -2,14 +2,15 @@ import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { EmptyTags } from "@/shared/EmptyStates";
+import RenameSheet, { type RenameSheetRef } from "@/shared/rename-sheet";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Platform,
   Text,
   TouchableOpacity,
   View,
@@ -81,6 +82,12 @@ export default function TagsScreen() {
   const deleteTag = useMutation(api.tags.deleteTag);
   const updateTag = useMutation(api.tags.updateTag);
 
+  const renameSheetRef = useRef<RenameSheetRef>(null);
+  const [renamingTag, setRenamingTag] = useState<{
+    id: Id<"tags">;
+    name: string;
+  } | null>(null);
+
   // ── Handlers
 
   function handleTagPress(tag: TagWithCount) {
@@ -106,29 +113,8 @@ export default function TagsScreen() {
   }
 
   function handleRenameTag(tag: TagWithCount) {
-    if (Platform.OS === "ios") {
-      Alert.prompt(
-        "Rename tag",
-        `Current name: ${tag.name}`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Save",
-            onPress: (newName?: string) => {
-              if (newName?.trim() && newName.trim() !== tag.name) {
-                updateTag({ tagId: tag._id, name: newName.trim() });
-              }
-            },
-          },
-        ],
-        "plain-text",
-        tag.name,
-      );
-    } else {
-      // Android — TODO: build a rename bottom sheet
-      // For now, route to tag picker which has inline creation
-      console.log("Rename not yet supported on Android — build rename sheet");
-    }
+    setRenamingTag({ id: tag._id, name: tag.name });
+    renameSheetRef.current?.open();
   }
 
   function confirmDeleteTag(tag: TagWithCount) {
@@ -224,6 +210,18 @@ export default function TagsScreen() {
             ListEmptyComponent={<EmptyTags />}
           />
         )}
+        <RenameSheet
+          ref={renameSheetRef}
+          title="Rename tag"
+          currentName={renamingTag?.name ?? ""}
+          onConfirm={(newName) => {
+            if (renamingTag) {
+              updateTag({ tagId: renamingTag.id, name: newName });
+              setRenamingTag(null);
+            }
+          }}
+          onDismiss={() => setRenamingTag(null)}
+        />
       </View>
     </View>
   );
