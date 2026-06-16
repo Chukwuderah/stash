@@ -1,17 +1,18 @@
 import Colors from "@/constants/colors";
+import { successHaptic } from "@/utils/haptics";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
 import BottomSheet, {
   BottomSheetBackdrop,
   BottomSheetView,
 } from "@gorhom/bottom-sheet";
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
-  forwardRef,
-  useImperativeHandle,
 } from "react";
 import {
   Alert,
@@ -32,7 +33,6 @@ interface RenameSheetProps {
 export interface RenameSheetRef {
   open: () => void;
 }
-
 
 const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
   ({ title, currentName, onConfirm, onDismiss }, ref) => {
@@ -83,6 +83,7 @@ const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
         handleDismiss();
         return;
       }
+      successHaptic();
       onConfirm(trimmed);
       handleDismiss();
     }

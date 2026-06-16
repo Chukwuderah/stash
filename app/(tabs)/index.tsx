@@ -1,6 +1,7 @@
+import { EmptyFilteredLot, EmptyLot } from "@/components/EmptyStates";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { EmptyFilteredLot, EmptyLot } from "@/shared/EmptyStates";
+import { mediumHaptic, selectionHaptic, tapHaptic } from "@/utils/haptics";
 import { useUser } from "@clerk/clerk-expo";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useConvexAuth, useQuery } from "convex/react";
@@ -245,7 +246,10 @@ export default function TheLotScreen() {
                 label={f.label}
                 filter={f.value}
                 active={activeFilter === f.value}
-                onPress={() => setActiveFilter(f.value)}
+                onPress={() => {
+                  selectionHaptic();
+                  setActiveFilter(f.value);
+                }}
               />
             ))}
           </ScrollView>
@@ -263,12 +267,13 @@ export default function TheLotScreen() {
             renderItem={({ item }) => (
               <IdeaCard
                 idea={item}
-                onPress={() =>
+                onPress={() => {
+                  tapHaptic();
                   router.push({
                     pathname: "/idea/[id]",
                     params: { id: item._id },
-                  })
-                }
+                  });
+                }}
               />
             )}
             contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}
@@ -302,7 +307,10 @@ export default function TheLotScreen() {
             android: { elevation: 6 },
           }),
         }}
-        onPress={() => router.push("/quick-add")}
+        onPress={() => {
+          mediumHaptic();
+          router.push("/quick-add");
+        }}
         activeOpacity={0.85}
       >
         <AntDesign name="plus" size={24} color="white" />

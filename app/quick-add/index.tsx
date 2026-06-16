@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { selectionHaptic, successHaptic, tapHaptic } from "@/utils/haptics";
 import { tagSelection } from "@/utils/tagSelection";
 import { AntDesign } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -74,6 +75,7 @@ export default function QuickAddScreen() {
         text: text.trim(),
         tagIds: selectedTags,
       });
+      successHaptic();
       router.back();
     } catch (error) {
       console.error("Failed to create idea:", error);
@@ -203,7 +205,10 @@ export default function QuickAddScreen() {
                         ? Colors.brandTeal
                         : Colors.lightTeal,
                     }}
-                    onPress={() => toggleTag(tag._id)}
+                    onPress={() => {
+                      selectionHaptic();
+                      toggleTag(tag._id);
+                    }}
                     activeOpacity={0.75}
                   >
                     <Text
@@ -218,12 +223,13 @@ export default function QuickAddScreen() {
 
               {/* Open full tag picker */}
               <TouchableOpacity
-                onPress={() =>
+                onPress={() => {
+                  tapHaptic();
                   router.push({
                     pathname: "/tag-picker",
                     params: { selected: JSON.stringify(selectedTags) },
-                  })
-                }
+                  });
+                }}
                 className="rounded-full px-3.5 py-1.5 border border-dashed items-center justify-center"
                 style={{ borderColor: Colors.brandTeal }}
                 activeOpacity={0.75}

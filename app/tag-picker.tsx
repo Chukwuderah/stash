@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { selectionHaptic, successHaptic } from "@/utils/haptics";
 import { tagSelection } from "@/utils/tagSelection";
 import { Ionicons } from "@expo/vector-icons";
 import type { BottomSheetBackdropProps } from "@gorhom/bottom-sheet";
@@ -174,6 +175,7 @@ export default function TagPickerScreen() {
         name: query.trim(),
         color,
       });
+      successHaptic();
       setSelected((prev) => [...prev, newTagId]);
       setQuery("");
     } finally {
@@ -324,7 +326,10 @@ export default function TagPickerScreen() {
                     name={item.name}
                     color={item.color}
                     selected={selected.includes(item._id)}
-                    onToggle={() => toggleTag(item._id)}
+                    onToggle={() => {
+                      selectionHaptic();
+                      toggleTag(item._id);
+                    }}
                   />
                 )}
                 keyboardShouldPersistTaps="handled"

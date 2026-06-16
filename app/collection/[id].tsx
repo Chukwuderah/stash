@@ -1,8 +1,14 @@
+import { EmptyCollection } from "@/components/EmptyStates";
+import RenameSheet, { type RenameSheetRef } from "@/components/RenameSheet";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { EmptyCollection } from "@/shared/EmptyStates";
-import RenameSheet, { type RenameSheetRef } from "@/shared/rename-sheet";
+import {
+  heavyHaptic,
+  mediumHaptic,
+  tapHaptic,
+  warningHaptic,
+} from "@/utils/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -235,7 +241,11 @@ export default function CollectionScreen() {
       {
         text: "Delete collection",
         style: "destructive",
-        onPress: confirmDelete,
+        onPress: async () => {
+          heavyHaptic();
+          await deleteCollection({ collectionId });
+          router.back();
+        },
       },
       { text: "Cancel", style: "cancel" },
     ]);
@@ -289,7 +299,13 @@ export default function CollectionScreen() {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={handleOverflowMenu} activeOpacity={0.75}>
+          <TouchableOpacity
+            onPress={() => {
+              warningHaptic();
+              handleOverflowMenu();
+            }}
+            activeOpacity={0.75}
+          >
             <Ionicons
               name="ellipsis-vertical"
               size={20}
@@ -345,12 +361,13 @@ export default function CollectionScreen() {
           renderItem={({ item }) => (
             <IdeaCard
               idea={item}
-              onPress={() =>
+              onPress={() => {
+                tapHaptic();
                 router.push({
                   pathname: "/idea/[id]",
                   params: { id: item!._id },
-                })
-              }
+                });
+              }}
             />
           )}
           contentContainerStyle={{ paddingTop: 14, paddingBottom: 120 }}
@@ -383,7 +400,10 @@ export default function CollectionScreen() {
             android: { elevation: 6 },
           }),
         }}
-        onPress={() => router.push("/quick-add")}
+        onPress={() => {
+          mediumHaptic();
+          router.push("/quick-add");
+        }}
         activeOpacity={0.85}
       >
         <Text className="text-[28px] text-white font-light leading-8">+</Text>

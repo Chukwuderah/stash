@@ -1,6 +1,7 @@
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { heavyHaptic, selectionHaptic, successHaptic } from "@/utils/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -138,6 +139,7 @@ export default function IdeaDetailScreen() {
   async function handleAddNote() {
     if (!newNote.trim()) return;
     await addNote({ ideaId, text: newNote.trim() });
+    successHaptic();
     setNewNote("");
   }
 
@@ -151,6 +153,7 @@ export default function IdeaDetailScreen() {
           text: "Archive",
           style: "destructive",
           onPress: async () => {
+            heavyHaptic();
             await updateIdea({ ideaId, status: "archived" });
             router.back();
           },
@@ -252,7 +255,10 @@ export default function IdeaDetailScreen() {
                     backgroundColor: active ? Colors.brandTeal : Colors.cardBg,
                     borderColor: active ? Colors.brandTeal : Colors.cardBorder,
                   }}
-                  onPress={() => handleSetStatus(s)}
+                  onPress={() => {
+                    selectionHaptic();
+                    handleSetStatus(s);
+                  }}
                   activeOpacity={0.75}
                 >
                   <Text
@@ -299,7 +305,10 @@ export default function IdeaDetailScreen() {
                     backgroundColor: active ? activeBg[p] : Colors.cardBg,
                     borderColor: active ? activeBorder[p] : Colors.cardBorder,
                   }}
-                  onPress={() => handleSetPriority(p)}
+                  onPress={() => {
+                    selectionHaptic();
+                    handleSetPriority(p);
+                  }}
                   activeOpacity={0.75}
                 >
                   <View

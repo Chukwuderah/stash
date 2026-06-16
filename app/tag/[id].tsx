@@ -1,7 +1,8 @@
+import { EmptyTagIdeas } from "@/components/EmptyStates";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { EmptyTagIdeas } from "@/shared/EmptyStates";
+import { selectionHaptic, tapHaptic } from "@/utils/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -266,7 +267,10 @@ export default function TagFilteredScreen() {
               key={f.value}
               label={f.label}
               active={statusFilter === f.value}
-              onPress={() => setStatusFilter(f.value)}
+              onPress={() => {
+                selectionHaptic();
+                setStatusFilter(f.value);
+              }}
             />
           ))}
         </ScrollView>
@@ -285,12 +289,13 @@ export default function TagFilteredScreen() {
             renderItem={({ item }) => (
               <IdeaCard
                 idea={item}
-                onPress={() =>
+                onPress={() => {
+                  tapHaptic();
                   router.push({
                     pathname: "/idea/[id]",
                     params: { id: item!._id },
-                  })
-                }
+                  });
+                }}
               />
             )}
             contentContainerStyle={{ paddingTop: 14, paddingBottom: 100 }}

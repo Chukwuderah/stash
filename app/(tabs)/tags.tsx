@@ -1,8 +1,9 @@
+import { EmptyTags } from "@/components/EmptyStates";
+import RenameSheet, { type RenameSheetRef } from "@/components/RenameSheet";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { EmptyTags } from "@/shared/EmptyStates";
-import RenameSheet, { type RenameSheetRef } from "@/shared/rename-sheet";
+import { heavyHaptic, tapHaptic, warningHaptic } from "@/utils/haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
@@ -107,7 +108,10 @@ export default function TagsScreen() {
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => confirmDeleteTag(tag),
+        onPress: () => {
+          heavyHaptic();
+          confirmDeleteTag(tag);
+        },
       },
     ]);
   }
@@ -201,8 +205,14 @@ export default function TagsScreen() {
             renderItem={({ item }) => (
               <TagRow
                 tag={item}
-                onPress={() => handleTagPress(item)}
-                onLongPress={() => handleTagLongPress(item)}
+                onPress={() => {
+                  tapHaptic();
+                  handleTagPress(item);
+                }}
+                onLongPress={() => {
+                  warningHaptic();
+                  handleTagLongPress(item);
+                }}
               />
             )}
             showsVerticalScrollIndicator={false}

@@ -1,6 +1,9 @@
+import {
+  EmptySearchPrompt,
+  EmptySearchResults,
+} from "@/components/EmptyStates";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
-import { EmptySearchPrompt, EmptySearchResults } from "@/shared/EmptyStates";
 import { Ionicons } from "@expo/vector-icons";
 import { useConvexAuth, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
