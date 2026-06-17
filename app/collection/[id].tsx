@@ -1,4 +1,5 @@
 import { EmptyCollection } from "@/components/EmptyStates";
+import { QueryError } from "@/components/Queryerror";
 import RenameSheet, { type RenameSheetRef } from "@/components/RenameSheet";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
@@ -201,6 +202,15 @@ export default function CollectionScreen() {
 
   const isLoading =
     (isAuthenticated && collection === undefined) || ideas === undefined;
+
+  if (!isLoading && (collection === undefined || ideas === undefined)) {
+    return (
+      <QueryError
+        onRetry={() => router.back()}
+        message="Couldn't load this collection."
+      />
+    );
+  }
 
   // Client-side priority filter
   const filteredIdeas =

@@ -1,4 +1,5 @@
 import { EmptyFilteredLot, EmptyLot } from "@/components/EmptyStates";
+import { QueryError } from "@/components/Queryerror";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import { mediumHaptic, selectionHaptic, tapHaptic } from "@/utils/haptics";
@@ -202,6 +203,10 @@ export default function TheLotScreen() {
     }) ?? [];
 
   const isLoading = isAuthenticated && ideas === undefined;
+
+  if (!isLoading && ideas === undefined) {
+    return <QueryError onRetry={() => router.replace("/(tabs)")} />;
+  }
 
   return (
     <View className="flex-1">

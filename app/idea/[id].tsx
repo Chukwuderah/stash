@@ -1,3 +1,4 @@
+import { QueryError } from "@/components/Queryerror";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
@@ -97,6 +98,8 @@ export default function IdeaDetailScreen() {
   const updateIdea = useMutation(api.ideas.updateIdea);
   const addNote = useMutation(api.notes.addNote);
 
+  const isLoading = isAuthenticated && idea === undefined;
+
   // Loading
   if (idea === undefined) {
     return (
@@ -106,6 +109,15 @@ export default function IdeaDetailScreen() {
       >
         <ActivityIndicator size="large" color={Colors.brandTeal} />
       </View>
+    );
+  }
+
+  if (!isLoading && idea === undefined) {
+    return (
+      <QueryError
+        onRetry={() => router.back()}
+        message="Couldn't load this idea. Tap to go back and try again."
+      />
     );
   }
 

@@ -17,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { QueryError } from "@/components/Queryerror";
 
 // Types
 
@@ -176,6 +177,10 @@ export default function TagFilteredScreen() {
   );
 
   const isLoading = tag === undefined || allIdeas === undefined;
+
+  if (!isLoading && (tag === undefined || allIdeas === undefined)) {
+    return <QueryError onRetry={() => router.back()} message="Couldn't load idea for this tag" />;
+  }
 
   // Client-side status filter
   const filteredIdeas =

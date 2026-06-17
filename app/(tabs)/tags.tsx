@@ -1,4 +1,5 @@
 import { EmptyTags } from "@/components/EmptyStates";
+import { QueryError } from "@/components/Queryerror";
 import RenameSheet, { type RenameSheetRef } from "@/components/RenameSheet";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
@@ -145,6 +146,10 @@ export default function TagsScreen() {
   }
 
   const isLoading = isAuthenticated && tags === undefined;
+
+  if (!isLoading && tags === undefined) {
+    return <QueryError onRetry={() => router.replace("/(tabs)")} />;
+  }
 
   return (
     <View className="flex-1">

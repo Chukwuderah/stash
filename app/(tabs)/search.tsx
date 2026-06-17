@@ -2,6 +2,7 @@ import {
   EmptySearchPrompt,
   EmptySearchResults,
 } from "@/components/EmptyStates";
+import { QueryError } from "@/components/Queryerror";
 import Colors from "@/constants/colors";
 import { api } from "@/convex/_generated/api";
 import { Ionicons } from "@expo/vector-icons";
@@ -260,32 +261,53 @@ export default function SearchScreen() {
 
       {/* ── Results ── */}
       <View className="flex-1" style={{ backgroundColor: Colors.screenBg }}>
-        <FlatList
-          data={results}
-          keyExtractor={(item) => item!._id}
-          renderItem={({ item }) => (
-            <IdeaCard
-              idea={item}
-              onPress={() =>
-                router.push({
-                  pathname: "/idea/[id]",
-                  params: { id: item!._id },
-                })
-              }
+        {/* Error state — authenticated, query has text, but results never arrived */}
+        {isAuthenticated &&
+          debouncedQuery.trim().length > 0 &&
+          !isSearching &&
+          searchResults === undefined && (
+            <QueryError
+              message="Couldn't complete the search. Check your connection and try again."
+              onRetry={() => {
+                setQuery("");
+                setDebouncedQuery("");
+              }}
             />
           )}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          ListEmptyComponent={() =>
-            query.trim().length === 0 ? (
-              <EmptySearchPrompt />
-            ) : (
-              <EmptySearchResults query={query} />
-            )
-          }
-        />
+
+        {!(
+          isAuthenticated &&
+          debouncedQuery.trim().length > 0 &&
+          !isSearching &&
+          searchResults === undefined
+        ) && (
+          <FlatList
+            data={results}
+            keyExtractor={(item) => item!._id}
+            renderItem={({ item }) => (
+              <IdeaCard
+                idea={item}
+                onPress={() =>
+                  router.push({
+                    pathname: "/idea/[id]",
+                    params: { id: item!._id },
+                  })
+                }
+              />
+            )}
+            contentContainerStyle={{ paddingTop: 4, paddingBottom: 100 }}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            ListEmptyComponent={() =>
+              query.trim().length === 0 ? (
+                <EmptySearchPrompt />
+              ) : (
+                <EmptySearchResults query={query} />
+              )
+            }
+          />
+        )}
       </View>
     </View>
   );
