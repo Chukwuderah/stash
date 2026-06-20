@@ -16,6 +16,8 @@ import {
 } from "react";
 import {
   Alert,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Text,
   TextInput,
@@ -38,8 +40,9 @@ const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
   ({ title, currentName, onConfirm, onDismiss }, ref) => {
     const bottomSheetRef = useRef<BottomSheet>(null);
     const inputRef = useRef<TextInput>(null);
-    const snapPoints = useMemo(() => ["55%", "82%"], []);
+    const snapPoints = useMemo(() => ["62%", "90%"], []);
     const [value, setValue] = useState(currentName);
+    const [isOpen, setIsOpen] = useState(false);
 
     // Sync value when currentName changes (e.g. different tag selected)
     useEffect(() => {
@@ -71,6 +74,7 @@ const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
         } else {
           // Android — open the bottom sheet
           setValue(currentName);
+          setIsOpen(true);
           bottomSheetRef.current?.expand();
           setTimeout(() => inputRef.current?.focus(), 300);
         }
@@ -90,6 +94,7 @@ const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
 
     const handleDismiss = useCallback(() => {
       bottomSheetRef.current?.close();
+      setIsOpen(false);
       onDismiss?.();
     }, [onDismiss]);
 
@@ -116,92 +121,107 @@ const RenameSheet = forwardRef<RenameSheetRef, RenameSheetProps>(
     if (Platform.OS === "ios") return null;
 
     return (
-      <BottomSheet
-        ref={bottomSheetRef}
-        index={0}
-        snapPoints={snapPoints}
-        enablePanDownToClose
-        onChange={handleSheetChange}
-        backdropComponent={renderBackdrop}
-        handleIndicatorStyle={{
-          backgroundColor: Colors.cardBorder,
-          width: 32,
-          height: 4,
-        }}
-        backgroundStyle={{
-          backgroundColor: Colors.cardBg,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-        }}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
+      <Modal
+        visible={isOpen}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={handleDismiss}
       >
-        <BottomSheetView className="px-5 pt-2 pb-6">
-          {/* Header */}
-          <View className="flex-row items-center justify-between mb-5">
-            <Text
-              className="text-[17px] font-semibold"
-              style={{ color: Colors.textPrimary }}
-            >
-              {title}
-            </Text>
-            <TouchableOpacity onPress={handleDismiss} activeOpacity={0.7}>
-              <Text className="text-[15px]" style={{ color: Colors.textMuted }}>
-                Cancel
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Input */}
-          <View
-            className="flex-row items-center rounded-xl px-4 py-3 mb-4 border-[0.5px]"
-            style={{
-              backgroundColor: Colors.screenBg,
-              borderColor: Colors.cardBorder,
+        <KeyboardAvoidingView
+          className="flex-1"
+        >
+          <BottomSheet
+            ref={bottomSheetRef}
+            index={0}
+            snapPoints={snapPoints}
+            enablePanDownToClose
+            onChange={handleSheetChange}
+            backdropComponent={renderBackdrop}
+            handleIndicatorStyle={{
+              backgroundColor: Colors.cardBorder,
+              width: 32,
+              height: 4,
             }}
-          >
-            <TextInput
-              ref={inputRef}
-              className="flex-1 text-[16px]"
-              style={{ color: Colors.textPrimary }}
-              value={value}
-              onChangeText={setValue}
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="done"
-              onSubmitEditing={handleSave}
-              selectTextOnFocus
-            />
-          </View>
-
-          {/* Save button */}
-          <TouchableOpacity
-            className="rounded-[14px] py-[14px] items-center"
-            style={{
-              backgroundColor:
-                value.trim() && value.trim() !== currentName
-                  ? Colors.brandTeal
-                  : Colors.cardBorder,
+            backgroundStyle={{
+              backgroundColor: Colors.cardBg,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
             }}
-            onPress={handleSave}
-            activeOpacity={0.85}
-            disabled={!value.trim() || value.trim() === currentName}
+            // keyboardBehavior="interactive"
+            // keyboardBlurBehavior="restore"
+            android_keyboardInputMode="adjustResize"
           >
-            <Text
-              className="text-[16px] font-semibold"
-              style={{
-                color:
-                  value.trim() && value.trim() !== currentName
-                    ? "#FFFFFF"
-                    : Colors.textMuted,
-              }}
-            >
-              Save
-            </Text>
-          </TouchableOpacity>
-        </BottomSheetView>
-      </BottomSheet>
+            <BottomSheetView className="px-5 pt-2 pb-6">
+              {/* Header */}
+              <View className="flex-row items-center justify-between mb-5">
+                <Text
+                  className="text-[17px] font-semibold"
+                  style={{ color: Colors.textPrimary }}
+                >
+                  {title}
+                </Text>
+                <TouchableOpacity onPress={handleDismiss} activeOpacity={0.7}>
+                  <Text
+                    className="text-[15px]"
+                    style={{ color: Colors.textMuted }}
+                  >
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Input */}
+              <View
+                className="flex-row items-center rounded-xl px-4 py-3 mb-4 border-[0.5px]"
+                style={{
+                  backgroundColor: Colors.screenBg,
+                  borderColor: Colors.cardBorder,
+                }}
+              >
+                <TextInput
+                  ref={inputRef}
+                  className="flex-1 text-[16px]"
+                  style={{ color: Colors.textPrimary }}
+                  value={value}
+                  onChangeText={setValue}
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSave}
+                  selectTextOnFocus
+                />
+              </View>
+
+              {/* Save button */}
+              <TouchableOpacity
+                className="rounded-[14px] py-[14px] items-center"
+                style={{
+                  backgroundColor:
+                    value.trim() && value.trim() !== currentName
+                      ? Colors.brandTeal
+                      : Colors.cardBorder,
+                }}
+                onPress={handleSave}
+                activeOpacity={0.85}
+                disabled={!value.trim() || value.trim() === currentName}
+              >
+                <Text
+                  className="text-[16px] font-semibold"
+                  style={{
+                    color:
+                      value.trim() && value.trim() !== currentName
+                        ? "#FFFFFF"
+                        : Colors.textMuted,
+                  }}
+                >
+                  Save
+                </Text>
+              </TouchableOpacity>
+            </BottomSheetView>
+          </BottomSheet>
+        </KeyboardAvoidingView>
+      </Modal>
     );
   },
 );

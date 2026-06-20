@@ -3,6 +3,9 @@
     "name": "Stash",
     "slug": "Stash",
     "version": "1.0.0",
+    "android": {
+      "versionCode": 1
+    },
     "orientation": "portrait",
     "icon": "./assets/stash-icon.png",
     "scheme": "stash",
@@ -10,10 +13,6 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
-    },
-    "notification": {
-      "icon": "./assets/notification-icon.png",
-      "color": "#042F2E"
     },
     "android": {
       "adaptiveIcon": {
@@ -41,6 +40,13 @@
           "resizeMode": "contain",
           "backgroundColor": "#042F2E",
           "showLabel": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#042F2E"
         }
       ],
       "expo-secure-store",

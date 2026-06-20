@@ -1,3 +1,5 @@
+import { ErrorBoundary } from "@/components/Errorboundary";
+import { OfflineBanner } from "@/components/Offlinebanner";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { ClerkProvider, useAuth } from "@clerk/clerk-expo";
 import { ConvexReactClient } from "convex/react";
@@ -66,35 +68,38 @@ export default function RootLayout() {
     >
       <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <GestureHandlerRootView style={{ flex: 1 }}>
-          <NotificationHandler />
-          <Stack>
-            <Stack.Screen name="index" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="quick-add/index"
-              options={{
-                presentation: "transparentModal",
-                animation: "fade",
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen name="idea/[id]" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="collection/[id]"
-              options={{ headerShown: false }}
-            />
-            <Stack.Screen name="tag/[id]" options={{ headerShown: false }} />
-            <Stack.Screen
-              name="tag-picker"
-              options={{
-                presentation: "transparentModal",
-                animation: "slide_from_bottom",
-                headerShown: false,
-              }}
-            />
-          </Stack>
-          <StatusBar style="light" />
+          <ErrorBoundary>
+            <NotificationHandler />
+            <OfflineBanner />
+            <Stack>
+              <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="quick-add/index"
+                options={{
+                  presentation: "transparentModal",
+                  animation: "fade",
+                  headerShown: false,
+                }}
+              />
+              <Stack.Screen name="idea/[id]" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="collection/[id]"
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen name="tag/[id]" options={{ headerShown: false }} />
+              <Stack.Screen
+                name="tag-picker"
+                options={{
+                  presentation: "transparentModal",
+                  animation: "slide_from_bottom",
+                  headerShown: false,
+                }}
+              />
+            </Stack>
+            <StatusBar style="light" />
+          </ErrorBoundary>
         </GestureHandlerRootView>
       </ConvexProviderWithClerk>
     </ClerkProvider>

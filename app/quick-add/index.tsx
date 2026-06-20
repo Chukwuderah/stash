@@ -127,7 +127,7 @@ export default function QuickAddScreen() {
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
         }}
-        keyboardBehavior="interactive"
+        keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
       >
